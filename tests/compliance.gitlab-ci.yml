@@ -1,0 +1,15 @@
+# Compliance regression: stellt sicher, dass Secret-Scanning tatsächlich blockiert (strict policy).
+# Simuliert ein "committed secret" im Job-Workspace und erwartet Failure.
+
+compliance:secret-gate:
+  stage: test
+  image: zricethezav/gitleaks:latest
+  variables:
+    SECURITY_POLICY: "strict"
+  script:
+    - mkdir -p fixtures
+    - echo "AWS_SECRET_ACCESS_KEY=AKIAxxxxxxxxxxxxxxxx" > fixtures/leak.txt
+    - gitleaks detect --redact --source .
+  rules:
+    - when: always
+  allow_failure: false

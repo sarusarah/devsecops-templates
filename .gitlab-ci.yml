@@ -1,0 +1,7 @@
+include:
+  - local: /tests/lint.gitlab-ci.yml
+  - local: /tests/contract.gitlab-ci.yml
+  - local: /tests/compliance.gitlab-ci.yml
+
+stages:
+  - test

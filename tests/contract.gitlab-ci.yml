@@ -1,0 +1,12 @@
+contract:examples:
+  stage: test
+  trigger:
+    include:
+      - local: /examples/node/.gitlab-ci.yml
+      - local: /examples/python/.gitlab-ci.yml
+      - local: /examples/php-symfony/.gitlab-ci.yml
+      - local: /examples/php-drupal/.gitlab-ci.yml
+      - local: /examples/container/.gitlab-ci.yml
+    strategy: depend
+  rules:
+    - when: always
