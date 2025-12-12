@@ -1,0 +1,74 @@
+.test:base:
+  stage: test
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$RUN_ON_BRANCHES == "true"'
+  artifacts:
+    when: always
+    expire_in: 7 days
+
+.test:node:
+  extends: .test:base
+  image: node:${NODE_VERSION:-20}-alpine
+  script:
+    - corepack enable
+    - |
+      if [ "${PACKAGE_MANAGER:-npm}" = "pnpm" ]; then
+        pnpm install --frozen-lockfile
+        pnpm test -- --ci
+      elif [ "${PACKAGE_MANAGER:-npm}" = "yarn" ]; then
+        yarn install --frozen-lockfile
+        yarn test
+      else
+        npm ci
+        npm test
+      fi
+
+.test:python:
+  extends: .test:base
+  image: python:${PYTHON_VERSION:-3.12}-slim
+  script:
+    - python -m pip install -U pip
+    - pip install pytest pytest-cov
+    - |
+      if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi
+      pytest -q --junitxml=junit.xml --cov=. --cov-report=xml:coverage.xml
+  artifacts:
+    reports:
+      junit: junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+    paths:
+      - junit.xml
+      - coverage.xml
+
+.test:phpunit:
+  extends: .test:base
+  image: php:${PHP_VERSION:-8.3}-cli
+  before_script:
+    - php -v
+    - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+    - |
+      # Install dependencies if vendor doesn't exist from build stage
+      if [ ! -d "vendor" ]; then
+        composer install --no-interaction --prefer-dist --optimize-autoloader
+      fi
+  script:
+    - |
+      if [ -f "vendor/bin/phpunit" ]; then
+        vendor/bin/phpunit --coverage-clover coverage.xml
+      elif [ -f "bin/phpunit" ]; then
+        php bin/phpunit --coverage-clover coverage.xml
+      else
+        echo "PHPUnit not found in vendor/bin/phpunit or bin/phpunit"
+        exit 1
+      fi
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+    paths:
+      - coverage.xml
