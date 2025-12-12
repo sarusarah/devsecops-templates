@@ -1,0 +1,36 @@
+container-security-scan:
+  stage: security-analysis
+  image: aquasec/trivy:0.58.1
+  before_script:
+    - |
+      # Authenticate with container registry if credentials are provided
+      if [ -n "${CI_REGISTRY}" ] && [ -n "${CI_REGISTRY_USER}" ] && [ -n "${CI_REGISTRY_PASSWORD}" ]; then
+        echo "Authenticating with ${CI_REGISTRY}..."
+        trivy image --username "${CI_REGISTRY_USER}" --password "${CI_REGISTRY_PASSWORD}"
+      fi
+  script:
+    - trivy --version
+    - |
+      if [ -z "${IMAGE_NAME}" ]; then
+        echo "IMAGE_NAME is required (e.g. CI_REGISTRY_IMAGE)."
+        exit 2
+      fi
+      IMAGE_REF="${IMAGE_NAME}:${IMAGE_TAG:-$CI_COMMIT_SHA}"
+      echo "Scanning image: ${IMAGE_REF}"
+      trivy image \
+        --severity "${TRIVY_SEVERITY}" \
+        --exit-code "${TRIVY_EXIT_CODE}" \
+        --format json \
+        --output trivy.json \
+        "${IMAGE_REF}"
+  rules:
+    - if: '$ENABLE_CONTAINER_SCAN == "true"'
+    - when: never
+  allow_failure: false
+  artifacts:
+    when: always
+    expire_in: 7 days
+    paths:
+      - trivy.json
+    reports:
+      container_scanning: trivy.json

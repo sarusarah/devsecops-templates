@@ -1,0 +1,19 @@
+sast:
+  stage: security-scan
+  image: returntocorp/semgrep:1.97.0
+  script:
+    - semgrep --version
+    # Using p/security-audit config (doesn't require metrics)
+    # Alternative: use 'auto' but remove --metrics off
+    - semgrep scan --config p/security-audit --json -o semgrep.json .
+  rules:
+    - if: '$ENABLE_SAST == "true"'
+    - when: never
+  allow_failure: false
+  artifacts:
+    when: always
+    expire_in: 7 days
+    paths:
+      - semgrep.json
+    reports:
+      sast: semgrep.json
