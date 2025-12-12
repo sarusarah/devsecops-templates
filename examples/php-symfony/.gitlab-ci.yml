@@ -1,0 +1,53 @@
+include:
+  - project: platform/devsecops-template
+    ref: v1.0.0
+    file:
+      - /templates/base.yml
+      - /templates/security/secrets.yml
+      - /templates/security/dependency.yml
+      - /templates/security/sast.yml
+      - /templates/gitops/deploy-staging.yml
+      - /templates/gitops/deploy-production.yml
+      - /templates/monitor.yml
+
+variables:
+  APP_NAME: "symfony-app"
+  LANGUAGE: "php"
+  PHP_VERSION: "8.3"
+  ENABLE_DAST: "true"
+  STAGING_URL: "https://staging.symfony.example.com"
+  GITOPS_REPO: "git@gitlab.example.com:gitops/symfony-app.git"
+
+build-application:
+  stage: build
+  image: php:${PHP_VERSION}-cli
+  script:
+    - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+    - composer install --no-interaction --prefer-dist --optimize-autoloader
+  artifacts:
+    paths:
+      - vendor/
+
+unit-tests:
+  stage: test
+  image: php:${PHP_VERSION}-cli
+  script:
+    - php bin/phpunit --coverage-clover coverage.xml
+  artifacts:
+    when: always
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+    paths:
+      - coverage.xml
+
+# Optional Performance (Phase 2)
+performance-tests:
+  stage: test
+  image: python:3.12-slim
+  script:
+    - pip install locust
+    - locust --headless --users 50 --run-time 60s --host ${STAGING_URL}
+  rules:
+    - if: $ENABLE_PERF_TESTS == "true"

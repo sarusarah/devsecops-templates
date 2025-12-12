@@ -1,0 +1,57 @@
+include:
+  - project: platform/devsecops-template
+    ref: v1.0.0
+    file:
+      - /templates/base.yml
+      - /templates/security/secrets.yml
+      - /templates/security/dependency.yml
+      - /templates/security/sast.yml
+      - /templates/gitops/deploy-staging.yml
+      - /templates/gitops/deploy-production.yml
+      - /templates/monitor.yml
+
+variables:
+  APP_NAME: "nuxt-app"
+  LANGUAGE: "node"
+  NODE_VERSION: "20"
+  PACKAGE_MANAGER: "pnpm"          # npm|yarn|pnpm
+  ENABLE_DAST: "true"
+  STAGING_URL: "https://staging.example.com"
+  GITOPS_REPO: "git@gitlab.example.com:gitops/nuxt-app.git"
+
+# Team-spezifische Implementierung via extends, ohne Template zu kopieren
+build-application:
+  stage: build
+  image: node:${NODE_VERSION}-alpine
+  script:
+    - corepack enable
+    - pnpm install --frozen-lockfile
+    - pnpm build
+  artifacts:
+    paths:
+      - .output/
+      - .nuxt/
+      - node_modules/
+
+unit-tests:
+  stage: test
+  image: node:${NODE_VERSION}-alpine
+  script:
+    - corepack enable
+    - pnpm install --frozen-lockfile
+    - pnpm test -- --ci
+  artifacts:
+    when: always
+    reports:
+      junit: junit.xml
+    paths:
+      - junit.xml
+
+# Optional: E2E gegen Staging (Phase 7-8)
+e2e-tests:
+  stage: validate
+  image: cypress/included:15.3.0
+  script:
+    - cypress run --config baseUrl=${STAGING_URL}
+  rules:
+    - if: $ENABLE_E2E == "true"
