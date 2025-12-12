@@ -1,0 +1,72 @@
+.deploy:production:base:
+  stage: deploy-production
+  image: alpine/git:latest
+  before_script:
+    - apk add --no-cache yq bash curl
+    - |
+      # Verify required variables
+      if [ -z "${GITOPS_REPO}" ]; then
+        echo "GITOPS_REPO is required (e.g., git@gitlab.example.com:gitops/app.git)"
+        exit 1
+      fi
+      if [ -z "${PRODUCTION_URL}" ]; then
+        echo "⚠️  Warning: PRODUCTION_URL not set"
+      fi
+      # Setup SSH key for GitOps repo
+      if [ -n "${GITOPS_SSH_KEY}" ]; then
+        mkdir -p ~/.ssh
+        echo "${GITOPS_SSH_KEY}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts 2>/dev/null || true
+      fi
+  script:
+    - |
+      echo "Deploying to production via GitOps..."
+
+      # Clone GitOps repository
+      git clone "${GITOPS_REPO}" gitops-repo
+      cd gitops-repo
+
+      # Checkout production branch if specified
+      if [ -n "${GITOPS_PRODUCTION_BRANCH}" ]; then
+        git checkout "${GITOPS_PRODUCTION_BRANCH}"
+      fi
+
+      # Configure git
+      git config user.email "ci@${CI_PROJECT_PATH_SLUG}.gitlab.com"
+      git config user.name "GitLab CI"
+
+      # Update image tag in values file
+      IMAGE_TAG_VALUE="${IMAGE_TAG:-$CI_COMMIT_SHA}"
+      GITOPS_FILE="${GITOPS_PRODUCTION_PATH:-${GITOPS_PATH:-values.yaml}}"
+      YQ_PATH="${GITOPS_IMAGE_TAG_YQ_PATH:-.image.tag}"
+
+      echo "Updating ${GITOPS_FILE} at path ${YQ_PATH} to ${IMAGE_TAG_VALUE}"
+
+      # Update the file using yq
+      yq eval "${YQ_PATH} = \"${IMAGE_TAG_VALUE}\"" -i "${GITOPS_FILE}"
+
+      # Commit and push changes
+      git add "${GITOPS_FILE}"
+      git diff --cached --quiet && echo "No changes to commit" && exit 0
+
+      COMMIT_MSG="${GITOPS_PRODUCTION_COMMIT_MESSAGE:-Deploy ${CI_COMMIT_SHORT_SHA} to production}"
+      git commit -m "${COMMIT_MSG}"
+      git push origin HEAD
+
+      echo "✅ Successfully deployed ${IMAGE_TAG_VALUE} to production"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      when: manual
+    - if: '$CI_COMMIT_TAG'
+      when: on_success
+    - when: never
+  environment:
+    name: production
+    url: ${PRODUCTION_URL}
+    deployment_tier: production
+
+deploy-production:
+  extends: .deploy:production:base
+  variables:
+    IMAGE_TAG: ${CI_COMMIT_SHA}

@@ -1,0 +1,64 @@
+.deploy:staging:base:
+  stage: deploy-staging
+  image: alpine/git:latest
+  before_script:
+    - apk add --no-cache yq bash curl
+    - |
+      # Verify required variables
+      if [ -z "${GITOPS_REPO}" ]; then
+        echo "GITOPS_REPO is required (e.g., git@gitlab.example.com:gitops/app.git)"
+        exit 1
+      fi
+      # Setup SSH key for GitOps repo
+      if [ -n "${GITOPS_SSH_KEY}" ]; then
+        mkdir -p ~/.ssh
+        echo "${GITOPS_SSH_KEY}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts 2>/dev/null || true
+      fi
+  script:
+    - |
+      echo "Deploying to staging via GitOps..."
+
+      # Clone GitOps repository
+      git clone "${GITOPS_REPO}" gitops-repo
+      cd gitops-repo
+
+      # Configure git
+      git config user.email "ci@${CI_PROJECT_PATH_SLUG}.gitlab.com"
+      git config user.name "GitLab CI"
+
+      # Update image tag in values file
+      IMAGE_TAG_VALUE="${IMAGE_TAG:-$CI_COMMIT_SHA}"
+      GITOPS_FILE="${GITOPS_PATH:-values.yaml}"
+      YQ_PATH="${GITOPS_IMAGE_TAG_YQ_PATH:-.image.tag}"
+
+      echo "Updating ${GITOPS_FILE} at path ${YQ_PATH} to ${IMAGE_TAG_VALUE}"
+
+      # Update the file using yq
+      yq eval "${YQ_PATH} = \"${IMAGE_TAG_VALUE}\"" -i "${GITOPS_FILE}"
+
+      # Commit and push changes
+      git add "${GITOPS_FILE}"
+      git diff --cached --quiet && echo "No changes to commit" && exit 0
+
+      COMMIT_MSG="${GITOPS_COMMIT_MESSAGE:-Deploy ${CI_COMMIT_SHORT_SHA} to staging}"
+      git commit -m "${COMMIT_MSG}"
+      git push origin HEAD
+
+      echo "✅ Successfully deployed ${IMAGE_TAG_VALUE} to staging"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      when: on_success
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: manual
+    - when: never
+  environment:
+    name: staging
+    url: ${STAGING_URL}
+    deployment_tier: staging
+
+deploy-staging:
+  extends: .deploy:staging:base
+  variables:
+    IMAGE_TAG: ${CI_COMMIT_SHA}
