@@ -15,6 +15,11 @@ variables:
   LANGUAGE: "node"
   NODE_VERSION: "20"
   PACKAGE_MANAGER: "pnpm"          # npm|yarn|pnpm
+
+  # Use specialized tools for comprehensive JavaScript/TypeScript analysis
+  SECURITY_SCANNER: "specialized"
+  SAST_TOOL: "semgrep"             # Semgrep has excellent JS/TS rules
+
   ENABLE_DAST: "true"
   STAGING_URL: "https://staging.example.com"
   GITOPS_REPO: "git@gitlab.example.com:gitops/nuxt-app.git"
@@ -49,7 +54,7 @@ unit-tests:
 
 # Optional: E2E gegen Staging (Phase 7-8)
 e2e-tests:
-  stage: validate
+  stage: test
   image: cypress/included:15.3.0
   script:
     - cypress run --config baseUrl=${STAGING_URL}

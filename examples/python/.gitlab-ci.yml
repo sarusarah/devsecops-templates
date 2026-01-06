@@ -14,6 +14,10 @@ variables:
   APP_NAME: "python-app"
   LANGUAGE: "python"
   PYTHON_VERSION: "3.12"
+
+  # Use Trivy for unified security scanning (default)
+  SECURITY_SCANNER: "trivy"
+
   ENABLE_DAST: "false"
   GITOPS_REPO: "git@gitlab.example.com:gitops/python-app.git"
 

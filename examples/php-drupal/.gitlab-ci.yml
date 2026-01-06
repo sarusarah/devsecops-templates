@@ -14,6 +14,10 @@ variables:
   APP_NAME: "drupal-app"
   LANGUAGE: "php"
   PHP_VERSION: "8.3"
+
+  # Use Trivy for unified security scanning (default)
+  SECURITY_SCANNER: "trivy"
+
   ENABLE_DAST: "true"
   STAGING_URL: "https://staging.drupal.example.com"
   GITOPS_REPO: "git@gitlab.example.com:gitops/drupal-app.git"
