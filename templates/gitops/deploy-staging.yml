@@ -1,5 +1,8 @@
+# OWASP SPVS: Release Phase - Staging deployment
+# Deploy application to staging environment via GitOps
+
 .deploy:staging:base:
-  stage: deploy-staging
+  stage: stage
   image: alpine/git:latest
   before_script:
     - apk add --no-cache yq bash curl

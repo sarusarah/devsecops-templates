@@ -1,13 +1,9 @@
+# OWASP SPVS: Operate Phase - Security reporting and metrics
+# Aggregate and report all security scan results
+
 reporting:
   stage: report
   image: alpine:3.20
-  dependencies:
-    - secrets-detection
-    - dependency-scanning
-    - sast
-    - container-security-scan
-    - dast-zap
-    - iac-security
   script:
     - apk add --no-cache bash jq curl
     - |
@@ -18,13 +14,14 @@ reporting:
       echo "- **Branch**: ${CI_COMMIT_REF_NAME}" >> summary.md
       echo "- **Pipeline**: ${CI_PIPELINE_URL}" >> summary.md
       echo "- **Date**: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> summary.md
+      echo "- **Security Scanner**: ${SECURITY_SCANNER}" >> summary.md
       echo "" >> summary.md
 
       # Track if any critical issues found
       CRITICAL_ISSUES=0
 
-      # Aggregate known report files if present
-      for f in gitleaks-report.json dependency-scan.json semgrep.json trivy.json polaris.json zap/zap.json; do
+      # Aggregate known report files if present (both Trivy and specialized tool outputs)
+      for f in secrets-report.json gitleaks-report.json dependency-scan.json sast-report.json semgrep.json iac-report.json polaris.json trivy.json zap/zap.json; do
         if [ -f "$f" ]; then
           echo "## Report: $f" >> summary.md
 

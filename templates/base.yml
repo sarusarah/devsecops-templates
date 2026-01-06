@@ -1,17 +1,25 @@
 include:
   - local: /templates/workflow.yml
 
+# Pipeline stages aligned with OWASP Secure Pipeline Verification Standard (SPVS)
+# https://owasp.org/www-project-spvs/
 stages:
-  - preflight
-  - build
-  - test
-  - security-scan
-  - security-analysis
-  - deploy-staging
-  - validate
-  - deploy-production
-  - monitor
-  - report
+  # OWASP SPVS: Develop Phase - Secure coding and continuous reviews
+  - source        # Source code security (secrets, dependencies, SAST)
+  - build         # Build artifacts
+  - test          # Unit and integration tests
+
+  # OWASP SPVS: Integrate Phase - Automated validation and artifact integrity
+  - package       # Package and scan artifacts (container, IaC)
+
+  # OWASP SPVS: Release Phase - Final validations and secure deployment
+  - stage         # Deploy to staging environment
+  - verify        # Verification testing (DAST, E2E, acceptance)
+  - deploy        # Deploy to production
+
+  # OWASP SPVS: Operate Phase - Continuous monitoring and incident response
+  - operate       # Operations and monitoring
+  - report        # Security reporting and metrics
 
 default:
   interruptible: true
@@ -24,6 +32,16 @@ default:
 variables:
   # Polyglot selector (node|python|php|java|generic)
   LANGUAGE: "generic"
+
+  # Security tool selection (trivy|specialized)
+  # trivy: Use Trivy for all security scanning (secrets, dependencies, SAST, IaC, container)
+  # specialized: Use specialized tools (Gitleaks, language-specific scanners, Semgrep)
+  SECURITY_SCANNER: "trivy"
+
+  # SAST tool selection (only applies when SECURITY_SCANNER=specialized or for mixed approach)
+  # semgrep: Use Semgrep for comprehensive SAST
+  # trivy: Use Trivy for basic SAST/misconfiguration detection
+  SAST_TOOL: "semgrep"
 
   # Feature toggles (Teams können aktivieren/deaktivieren)
   ENABLE_SECRETS: "true"

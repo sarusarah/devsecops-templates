@@ -1,5 +1,8 @@
+# OWASP SPVS: Release Phase - Production deployment
+# Deploy application to production environment via GitOps
+
 .deploy:production:base:
-  stage: deploy-production
+  stage: deploy
   image: alpine/git:latest
   before_script:
     - apk add --no-cache yq bash curl

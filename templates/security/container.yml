@@ -1,5 +1,8 @@
+# OWASP SPVS: Integrate Phase - Artifact integrity and security validation
+# Scan container images for vulnerabilities, misconfigurations, and security issues
+
 container-security-scan:
-  stage: security-analysis
+  stage: package
   image: aquasec/trivy:0.58.1
   before_script:
     - |

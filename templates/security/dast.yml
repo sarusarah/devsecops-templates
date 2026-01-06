@@ -1,5 +1,8 @@
+# OWASP SPVS: Release Phase - Dynamic security validation
+# Dynamic Application Security Testing (DAST) - Test running application for vulnerabilities
+
 dast-zap:
-  stage: validate
+  stage: verify
   image: ghcr.io/zaproxy/zaproxy:2.15.0
   script:
     - |
