@@ -6,7 +6,7 @@ A comprehensive, enterprise-grade GitLab CI/CD template library implementing Dev
 
 ## Quick Start
 
-### For Teams Using These Templates
+### Using The Templates
 
 Include the templates you need in your `.gitlab-ci.yml` and enable desired security scans:
 ```yaml
@@ -27,19 +27,6 @@ variables:
 
 # Your custom jobs here...
 ```
-
-### For Template Developers
-
-```bash
-# Clone repository
-
-# Test locally with Dagger (recommended)
-dagger call test --source=./examples/node --language=node
-
-# Or use gitlab-ci-local
-./test-local.sh
-```
-
 ---
 
 ## What's Included
@@ -127,20 +114,6 @@ npm install -g gitlab-ci-local
 cd examples/node
 gitlab-ci-local --preview
 ```
-
-**See [TESTING.md](./TESTING.md) for complete testing guide**
-
----
-
-## Documentation
-
-| Document | Description |
-|----------|-------------|
-| [TESTING.md](./TESTING.md) | Complete guide to local testing |
-| [dagger/README.md](./dagger/README.md) | Dagger module usage guide |
-
----
-
 ## Key Features
 
 ### Security by Default

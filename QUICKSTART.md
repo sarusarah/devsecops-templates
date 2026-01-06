@@ -10,7 +10,7 @@ cd dagger
 
 ---
 
-## 📋 Available Commands
+## Available Commands
 
 ### Run Full Security Scan Suite
 
