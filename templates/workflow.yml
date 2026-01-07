@@ -1,3 +1,4 @@
+---
 workflow:
   rules:
     # Pipelines für MRs immer

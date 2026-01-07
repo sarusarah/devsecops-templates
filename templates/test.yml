@@ -1,3 +1,4 @@
+---
 .test:base:
   stage: test
   rules:
