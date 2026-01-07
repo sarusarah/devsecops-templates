@@ -99,6 +99,7 @@ lint:stages:
         stages=$(grep "^  stage:" "$template" | awk '{print $2}' || true)
 
         for stage in $stages; do
+          echo "Checking stage '$stage' in $template"
           if ! echo "$VALID_STAGES" | grep -wq "$stage"; then
             echo "Invalid stage '$stage' found in $template"
             echo "Valid stages: $VALID_STAGES"
@@ -110,7 +111,7 @@ lint:stages:
       # Check base.yml has all required stages
       echo "Checking base.yml for required stages..."
       for required_stage in $VALID_STAGES; do
-        if ! grep -q "- $required_stage" templates/base.yml; then
+        if ! grep -Fq -- "- $required_stage" templates/base.yml; then
           echo "Required stage '$required_stage' missing in templates/base.yml"
           exit 1
         fi
