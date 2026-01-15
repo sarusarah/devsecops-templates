@@ -6,10 +6,10 @@ container-security-scan:
   image: aquasec/trivy:0.58.1
   before_script:
     - |
-      # Authenticate with container registry if credentials are provided
+      # Authenticate with container registry if credentials are provided (if image needs to be pulled from private registry)
       if [ -n "${CI_REGISTRY}" ] && [ -n "${CI_REGISTRY_USER}" ] && [ -n "${CI_REGISTRY_PASSWORD}" ]; then
-          echo "Logging in to ${CI_REGISTRY}..."
-          printf '%s' "${CI_REGISTRY_PASSWORD}" | docker login "${CI_REGISTRY}" -u "${CI_REGISTRY_USER}" --password-stdin
+        export TRIVY_USERNAME="${CI_REGISTRY_USER}"
+        export TRIVY_PASSWORD="${CI_REGISTRY_PASSWORD}"
       fi
   script:
     - trivy --version
