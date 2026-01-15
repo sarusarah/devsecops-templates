@@ -8,8 +8,8 @@ container-security-scan:
     - |
       # Authenticate with container registry if credentials are provided
       if [ -n "${CI_REGISTRY}" ] && [ -n "${CI_REGISTRY_USER}" ] && [ -n "${CI_REGISTRY_PASSWORD}" ]; then
-        echo "Authenticating with ${CI_REGISTRY}..."
-        trivy image --username "${CI_REGISTRY_USER}" --password "${CI_REGISTRY_PASSWORD}"
+          echo "Logging in to ${CI_REGISTRY}..."
+          printf '%s' "${CI_REGISTRY_PASSWORD}" | docker login "${CI_REGISTRY}" -u "${CI_REGISTRY_USER}" --password-stdin
       fi
   script:
     - trivy --version
