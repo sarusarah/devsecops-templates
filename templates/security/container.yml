@@ -4,6 +4,11 @@
 container-security-scan:
   stage: package
   image: aquasec/trivy:0.58.1
+  before_script:
+    - |
+      # Authenticate with container registry if credentials are provided (if image needs to be pulled from private registry)
+      export TRIVY_USERNAME="gitlab-ci-token"
+      export TRIVY_PASSWORD="${CI_JOB_TOKEN}"
   script:
     - trivy --version
     - |
