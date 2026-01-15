@@ -4,21 +4,13 @@
 container-security-scan:
   stage: package
   image: aquasec/trivy:0.58.1
-  before_script:
-    - |
-      # Authenticate with container registry if credentials are provided (if image needs to be pulled from private registry)
-      if [ -n "${CI_REGISTRY}" ] && [ -n "${CI_REGISTRY_USER}" ] && [ -n "${CI_REGISTRY_PASSWORD}" ]; then
-        export TRIVY_USERNAME="${CI_REGISTRY_USER}"
-        export TRIVY_PASSWORD="${CI_REGISTRY_PASSWORD}"
-      fi
   script:
     - trivy --version
     - |
-      if [ -z "${IMAGE_NAME}" ]; then
-        echo "IMAGE_NAME is required (e.g. CI_REGISTRY_IMAGE)."
-        exit 2
-      fi
-      IMAGE_REF="${IMAGE_NAME}:${IMAGE_TAG:-$CI_COMMIT_SHA}"
+      IMAGE_REPO="${IMAGE_NAME:-$CI_REGISTRY_IMAGE}"
+      IMAGE_TAG="${IMAGE_TAG:-latest}"
+      IMAGE_REF="${IMAGE_REPO}:${IMAGE_TAG}"
+
       echo "Scanning image: ${IMAGE_REF}"
       trivy image \
         --severity "${TRIVY_SEVERITY}" \
