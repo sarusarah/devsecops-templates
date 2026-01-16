@@ -132,8 +132,8 @@ jobs:
       - name: Create package
         run: |
           tar -czf devsecops-templates-${{ github.ref_name }}.tar.gz \
-            templates/ examples/ dagger/ *.md \
-            --exclude='.git*' --exclude='*.pyc'
+            --exclude='.git*' --exclude='*.pyc' \
+            templates/ examples/ dagger/ *.md
           sha256sum devsecops-templates-${{ github.ref_name }}.tar.gz > checksums.txt
       - uses: softprops/action-gh-release@v1
         with:
