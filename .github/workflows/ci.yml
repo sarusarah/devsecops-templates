@@ -64,6 +64,7 @@ jobs:
   security-secrets:
     name: Secret Scanning
     runs-on: ubuntu-latest
+    if: github.event_name != 'release'
     steps:
       - uses: actions/checkout@v4
         with:
