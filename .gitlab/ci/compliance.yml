@@ -1,3 +1,4 @@
+---
 # Compliance regression: stellt sicher, dass Secret-Scanning tatsächlich blockiert (strict policy).
 # Simuliert ein "committed secret" im Job-Workspace und erwartet Failure.
 

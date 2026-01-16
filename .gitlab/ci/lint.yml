@@ -1,3 +1,4 @@
+---
 # Linting and validation jobs for DevSecOps templates
 
 # Validate all YAML template files
@@ -22,18 +23,16 @@ lint:yaml:
 # Validate GitLab CI syntax using gitlab-ci-lint
 lint:gitlab-ci:
   stage: test
-  image: alpine:3.20
+  image: python:3.12-slim
   before_script:
-    - apk add --no-cache curl jq
+    - pip install -q pyyaml
   script:
     - echo "Validating GitLab CI configuration files..."
     - |
       # Validate main .gitlab-ci.yml
       if [ -f ".gitlab-ci.yml" ]; then
         echo "Validating .gitlab-ci.yml"
-        # Note: This requires GITLAB_TOKEN to be set for API validation
-        # For now, we'll do basic YAML validation
-        python3 -c "import yaml; yaml.safe_load(open('.gitlab-ci.yml'))" 2>/dev/null || \
+        python3 -c "import yaml; yaml.safe_load(open('.gitlab-ci.yml'))" || \
           (echo ".gitlab-ci.yml has invalid YAML syntax" && exit 1)
       fi
 
@@ -41,7 +40,7 @@ lint:gitlab-ci:
       for ci_file in examples/*/.gitlab-ci.yml; do
         if [ -f "$ci_file" ]; then
           echo "Validating $ci_file"
-          python3 -c "import yaml; yaml.safe_load(open('$ci_file'))" 2>/dev/null || \
+          python3 -c "import yaml; yaml.safe_load(open('$ci_file'))" || \
             (echo "$ci_file has invalid YAML syntax" && exit 1)
         fi
       done
