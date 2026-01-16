@@ -281,6 +281,94 @@ IMAGE_NAME: "${CI_REGISTRY_IMAGE}"
 IMAGE_TAG: "${CI_COMMIT_SHA}"
 ```
 
+### Container Scanning Configuration
+
+The container scanning template scans Docker images for vulnerabilities using Trivy. It supports various deployment patterns and custom image naming schemes.
+
+#### Basic Configuration
+
+```yaml
+include:
+  - project: platform/devsecops-template
+    file: /templates/security/container.yml
+
+variables:
+  ENABLE_CONTAINER_SCAN: "true"
+  IMAGE_NAME: "${CI_REGISTRY_IMAGE}"
+  IMAGE_TAG: "latest"
+```
+
+#### Advanced Configuration: Sub-Images
+
+For projects that build multiple images (e.g., `myapp/staging:latest`, `myapp/prod:latest`):
+
+```yaml
+variables:
+  IMAGE_NAME: "${CI_REGISTRY_IMAGE}"
+  IMAGE_TAG: "latest"
+  CONTAINER_IMAGE_SUFFIX: "staging"  # Scans CI_REGISTRY_IMAGE/staging:latest
+
+# Or override per-branch:
+container-security-scan:staging:
+  extends: container-security-scan
+  variables:
+    CONTAINER_IMAGE_SUFFIX: "staging"
+  rules:
+    - if: '$ENABLE_CONTAINER_SCAN == "true" && $CI_COMMIT_BRANCH == "staging"'
+  needs:
+    - "build-staging-image"
+
+container-security-scan:prod:
+  extends: container-security-scan
+  variables:
+    CONTAINER_IMAGE_SUFFIX: "prod"
+  rules:
+    - if: '$ENABLE_CONTAINER_SCAN == "true" && $CI_COMMIT_BRANCH == "prod"'
+  needs:
+    - "build-prod-image"
+
+# Disable default job
+container-security-scan:
+  rules:
+    - when: never
+```
+
+#### Custom Image Naming
+
+```yaml
+variables:
+  IMAGE_NAME: "docker.io/myorg/myapp"  # External registry
+  IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
+  
+container-security-scan:
+  needs:
+    - "push-to-dockerhub"
+```
+
+#### Available Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `IMAGE_NAME` | `${CI_REGISTRY_IMAGE}` | Full image repository path |
+| `IMAGE_TAG` | `${CI_COMMIT_SHORT_SHA}` | Image tag to scan |
+| `CONTAINER_IMAGE_SUFFIX` | _(empty)_ | Sub-path for image (e.g., `staging`, `prod`) |
+| `TRIVY_SEVERITY` | `UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL` | Severity levels to report |
+| `TRIVY_EXIT_CODE` | `0` | Exit code for failures (set to `1` to fail pipeline) |
+| `TRIVY_NON_SSL` | `false` | Set to `true` for insecure registries |
+
+#### Image Resolution
+
+The template builds the image reference as follows:
+
+1. Base: `IMAGE_NAME` (defaults to `CI_REGISTRY_IMAGE`)
+2. If `CONTAINER_IMAGE_SUFFIX` is set: `IMAGE_NAME/CONTAINER_IMAGE_SUFFIX`
+3. Tag: `:IMAGE_TAG`
+
+**Examples:**
+- `IMAGE_NAME=registry/project`, `IMAGE_TAG=v1.0` → `registry/project:v1.0`
+- `IMAGE_NAME=registry/project`, `CONTAINER_IMAGE_SUFFIX=staging`, `IMAGE_TAG=latest` → `registry/project/staging:latest`
+
+
 ### GitOps Deployment
 ```yaml
 GITOPS_REPO: "git@gitlab.com:gitops/app.git"
@@ -339,5 +427,48 @@ docs/examples/api-key-example.md
 - `CI_REGISTRY`
 - `CI_REGISTRY_USER`
 - `CI_REGISTRY_PASSWORD`
+
+### Container Scan: Image Not Found
+
+**Problem:** Trivy can't find the specified image
+```
+unable to find the specified image "registry/project:tag"
+```
+
+**Solution:** Ensure the image exists with the correct tag before scanning:
+
+1. **Set correct IMAGE_TAG variable:**
+   ```yaml
+   variables:
+     IMAGE_TAG: "latest"  # Must match your actual build tag
+   ```
+
+2. **For sub-images (e.g., staging/prod):**
+   ```yaml
+   variables:
+     CONTAINER_IMAGE_SUFFIX: "staging"  # Scans CI_REGISTRY_IMAGE/staging:TAG
+   ```
+
+3. **Add needs dependency:**
+   ```yaml
+   container-security-scan:
+     needs:
+       - "build-and-push-image"  # Wait for image to be pushed
+   ```
+
+4. **For branch-specific images:**
+   ```yaml
+   container-security-scan:staging:
+     extends: container-security-scan
+     variables:
+       CONTAINER_IMAGE_SUFFIX: "staging"
+       IMAGE_TAG: "latest"
+     rules:
+       - if: '$ENABLE_CONTAINER_SCAN == "true" && $CI_COMMIT_BRANCH == "staging"'
+     needs:
+       - "Tag staging deployment image"
+   ```
+
+See [Container Scanning Configuration Guide](#container-scanning-configuration) for detailed examples.
 
 ---

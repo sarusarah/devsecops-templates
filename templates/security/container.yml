@@ -1,27 +1,64 @@
 # OWASP SPVS: Integrate Phase - Artifact integrity and security validation
 # Scan container images for vulnerabilities, misconfigurations, and security issues
+#
+# Documentation: See CONTAINER_SCANNING.md for detailed configuration guide
+#
+# Quick Start:
+#   variables:
+#     ENABLE_CONTAINER_SCAN: "true"
+#     IMAGE_TAG: "latest"  # Must match your build tag
+#
+# For multi-environment setups (staging/prod images):
+#   See CONTAINER_SCANNING.md "Multi-Environment Images" section
 
 container-security-scan:
   stage: package
   image: aquasec/trivy:0.58.1
   before_script:
     - |
-      # Authenticate with container registry if credentials are provided (if image needs to be pulled from private registry)
-      export TRIVY_USERNAME="gitlab-ci-token"
-      export TRIVY_PASSWORD="${CI_JOB_TOKEN}"
+      # Authenticate with container registry for remote scanning
+      export TRIVY_USERNAME="${CI_REGISTRY_USER:-gitlab-ci-token}"
+      export TRIVY_PASSWORD="${CI_REGISTRY_PASSWORD:-$CI_JOB_TOKEN}"
+      export TRIVY_NON_SSL="false"
   script:
     - trivy --version
     - |
       IMAGE_REPO="${IMAGE_NAME:-$CI_REGISTRY_IMAGE}"
-      IMAGE_TAG="${IMAGE_TAG:-latest}"
+      IMAGE_TAG="${IMAGE_TAG:-$CI_COMMIT_SHORT_SHA}"
+      
+      # Support scanning sub-images (e.g., CI_REGISTRY_IMAGE/staging or CI_REGISTRY_IMAGE/prod)
+      if [ -n "$CONTAINER_IMAGE_SUFFIX" ]; then
+        IMAGE_REPO="${IMAGE_REPO}/${CONTAINER_IMAGE_SUFFIX}"
+      fi
+      
       IMAGE_REF="${IMAGE_REPO}:${IMAGE_TAG}"
 
-      echo "Scanning image: ${IMAGE_REF}"
+      echo "================================================"
+      echo "Scanning container image for vulnerabilities"
+      echo "Registry: ${IMAGE_REPO}"
+      echo "Tag: ${IMAGE_TAG}"
+      echo "Full reference: ${IMAGE_REF}"
+      echo "================================================"
+      
+      # Use remote scanning since docker daemon is not available in GitLab CI
       trivy image \
-        --severity "${TRIVY_SEVERITY}" \
-        --exit-code "${TRIVY_EXIT_CODE}" \
+        --severity "${TRIVY_SEVERITY:-UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL}" \
+        --exit-code "${TRIVY_EXIT_CODE:-0}" \
         --format json \
         --output trivy.json \
+        --image-src remote \
+        --insecure="${TRIVY_NON_SSL}" \
+        "${IMAGE_REF}"
+      
+      # Also generate a table format for easier reading in job logs
+      echo ""
+      echo "Vulnerability Summary:"
+      echo "================================================"
+      trivy image \
+        --severity "${TRIVY_SEVERITY:-UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL}" \
+        --format table \
+        --image-src remote \
+        --insecure="${TRIVY_NON_SSL}" \
         "${IMAGE_REF}"
   rules:
     - if: '$ENABLE_CONTAINER_SCAN == "true"'
