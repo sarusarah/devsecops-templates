@@ -26,12 +26,12 @@ container-security-scan:
     - |
       IMAGE_REPO="${IMAGE_NAME:-$CI_REGISTRY_IMAGE}"
       IMAGE_TAG="${IMAGE_TAG:-$CI_COMMIT_SHORT_SHA}"
-      
+
       # Support scanning sub-images (e.g., CI_REGISTRY_IMAGE/staging or CI_REGISTRY_IMAGE/prod)
       if [ -n "$CONTAINER_IMAGE_SUFFIX" ]; then
         IMAGE_REPO="${IMAGE_REPO}/${CONTAINER_IMAGE_SUFFIX}"
       fi
-      
+
       IMAGE_REF="${IMAGE_REPO}:${IMAGE_TAG}"
 
       echo "================================================"
@@ -40,7 +40,7 @@ container-security-scan:
       echo "Tag: ${IMAGE_TAG}"
       echo "Full reference: ${IMAGE_REF}"
       echo "================================================"
-      
+
       # Use remote scanning since docker daemon is not available in GitLab CI
       trivy image \
         --severity "${TRIVY_SEVERITY:-UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL}" \
@@ -50,7 +50,7 @@ container-security-scan:
         --image-src remote \
         --insecure="${TRIVY_NON_SSL}" \
         "${IMAGE_REF}"
-      
+
       # Also generate a table format for easier reading in job logs
       echo ""
       echo "Vulnerability Summary:"
