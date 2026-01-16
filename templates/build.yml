@@ -1,3 +1,4 @@
+---
 # Hidden base job to be extended by examples/projects
 .build:base:
   stage: build
