@@ -1,0 +1,66 @@
+---
+name: Security - Container Scanning
+
+on:
+  workflow_call:
+    inputs:
+      image_name:
+        description: 'Container image name (e.g., ghcr.io/org/repo/frontend)'
+        required: true
+        type: string
+      image_tag:
+        description: 'Container image tag'
+        required: false
+        type: string
+        default: 'latest'
+      severity:
+        description: 'Severity levels to report'
+        required: false
+        type: string
+        default: 'UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL'
+    secrets:
+      registry_username:
+        description: 'Container registry username'
+        required: false
+      registry_password:
+        description: 'Container registry password'
+        required: false
+
+jobs:
+  container-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Trivy container scan
+        uses: aquasecurity/trivy-action@master
+        env:
+          TRIVY_USERNAME: ${{ secrets.registry_username || github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.registry_password || secrets.GITHUB_TOKEN }}
+        with:
+          image-ref: ${{ inputs.image_name }}:${{ inputs.image_tag }}
+          format: 'sarif'
+          output: 'trivy-container.sarif'
+          severity: ${{ inputs.severity }}
+
+      - name: Upload container scan results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-container.sarif
+
+      - name: Upload container scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: container-scan-report
+          path: trivy-container.sarif
+          retention-days: 7
+
+      - name: Generate vulnerability summary
+        uses: aquasecurity/trivy-action@master
+        env:
+          TRIVY_USERNAME: ${{ secrets.registry_username || github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.registry_password || secrets.GITHUB_TOKEN }}
+        with:
+          image-ref: ${{ inputs.image_name }}:${{ inputs.image_tag }}
+          format: 'table'
+          severity: ${{ inputs.severity }}

@@ -102,6 +102,31 @@ cd dagger
 dagger call test --source=/path/to/your/project --language=node
 ```
 
+### Testing Monorepo Projects
+
+```bash
+cd dagger
+
+# Test frontend project in monorepo
+dagger call test --source=../examples/monorepo-gitlab/frontend --language=node
+
+# Test backend project in monorepo
+dagger call test --source=../examples/monorepo-gitlab/backend --language=python
+
+# Test all projects in monorepo
+dagger call test --source=../examples/monorepo-gitlab/frontend --language=node && \
+dagger call test --source=../examples/monorepo-gitlab/backend --language=python
+```
+
+**Monorepo Benefits:**
+- Each project tested independently
+- Only test changed projects in CI
+- Parallel execution for faster results
+
+See complete examples:
+- **GitLab CI:** [examples/monorepo-gitlab/](../examples/monorepo-gitlab/)
+- **GitHub Actions:** [examples/monorepo-github/](../examples/monorepo-github/)
+
 ---
 
 ## What Gets Tested

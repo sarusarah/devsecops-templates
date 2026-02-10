@@ -14,7 +14,7 @@ sast:
         --severity HIGH,CRITICAL \
         --format json \
         --output sast-report.json \
-        .
+        "${PROJECT_PATH:-.}"
   rules:
     - if: '$ENABLE_SAST == "true" && ($SECURITY_SCANNER == "trivy" || $SAST_TOOL == "trivy")'
     - when: never
@@ -35,7 +35,7 @@ sast-semgrep:
     - semgrep --version
     # Using p/security-audit config (doesn't require metrics)
     # Alternative: use 'auto' but remove --metrics off
-    - semgrep scan --config p/security-audit --json -o semgrep.json .
+    - semgrep scan --config p/security-audit --json -o semgrep.json "${PROJECT_PATH:-.}"
   rules:
     - if: '$ENABLE_SAST == "true" && ($SECURITY_SCANNER == "specialized" || $SAST_TOOL == "semgrep")'
     - when: never

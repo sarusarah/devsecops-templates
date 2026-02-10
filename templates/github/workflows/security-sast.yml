@@ -1,0 +1,80 @@
+---
+name: Security - SAST
+
+on:
+  workflow_call:
+    inputs:
+      project_path:
+        description: 'Project directory path (for monorepo support)'
+        required: false
+        type: string
+        default: '.'
+      security_scanner:
+        description: 'Scanner to use (trivy or semgrep)'
+        required: false
+        type: string
+        default: 'trivy'
+      severity:
+        description: 'Severity levels to report'
+        required: false
+        type: string
+        default: 'HIGH,CRITICAL'
+
+jobs:
+  sast-trivy:
+    if: inputs.security_scanner == 'trivy'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy SAST scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: ${{ inputs.project_path }}
+          scanners: 'misconfig'
+          severity: ${{ inputs.severity }}
+          format: 'sarif'
+          output: 'sast-report.sarif'
+
+      - name: Upload SAST results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: sast-report.sarif
+
+      - name: Upload SAST scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sast-report-trivy
+          path: sast-report.sarif
+          retention-days: 7
+
+  sast-semgrep:
+    if: inputs.security_scanner == 'semgrep'
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep:1.97.0
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep scan
+        working-directory: ${{ inputs.project_path }}
+        run: semgrep scan --config p/security-audit --sarif -o semgrep.sarif .
+
+      - name: Upload SAST results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: ${{ inputs.project_path }}/semgrep.sarif
+
+      - name: Upload SAST scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sast-report-semgrep
+          path: ${{ inputs.project_path }}/semgrep.sarif
+          retention-days: 7

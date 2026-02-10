@@ -9,7 +9,7 @@ iac-security:
   script:
     - trivy --version
     - |
-      TARGET_DIR="${IAC_TARGET_DIR:-k8s}"
+      TARGET_DIR="${PROJECT_PATH:-.}/${IAC_TARGET_DIR:-k8s}"
       if [ ! -d "${TARGET_DIR}" ]; then
         echo "No IaC target dir '${TARGET_DIR}' found. Set IAC_TARGET_DIR or disable ENABLE_IAC_SCAN."
         exit 0
@@ -45,7 +45,7 @@ iac-security-specialized:
     - chmod +x /usr/local/bin/polaris
     - |
       set -e
-      TARGET_DIR="${IAC_TARGET_DIR:-k8s}"
+      TARGET_DIR="${PROJECT_PATH:-.}/${IAC_TARGET_DIR:-k8s}"
       if [ ! -d "${TARGET_DIR}" ]; then
         echo "No IaC target dir '${TARGET_DIR}' found. Set IAC_TARGET_DIR or disable ENABLE_IAC_SCAN."
         exit 0

@@ -1,0 +1,61 @@
+---
+name: Frontend CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'frontend/**'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'frontend/**'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  secrets:
+    name: Secret Scanning
+    uses: platform/devsecops-template/.github/workflows/security-secrets.yml@main
+    with:
+      project_path: frontend
+      security_scanner: trivy
+    permissions:
+      contents: read
+
+  build:
+    name: Build
+    uses: platform/devsecops-template/.github/workflows/build-node.yml@main
+    with:
+      project_path: frontend
+      node_version: '20'
+      package_manager: npm
+
+  test:
+    name: Test
+    needs: build
+    uses: platform/devsecops-template/.github/workflows/test-node.yml@main
+    with:
+      project_path: frontend
+      node_version: '20'
+      package_manager: npm
+
+  sast:
+    name: SAST
+    uses: platform/devsecops-template/.github/workflows/security-sast.yml@main
+    with:
+      project_path: frontend
+      security_scanner: trivy
+    permissions:
+      contents: read
+      security-events: write
+
+  dependency-scan:
+    name: Dependency Scan
+    uses: platform/devsecops-template/.github/workflows/security-dependency.yml@main
+    with:
+      project_path: frontend
+      language: node
+      security_scanner: trivy

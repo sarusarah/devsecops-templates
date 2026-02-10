@@ -1,0 +1,15 @@
+{
+  "name": "frontend",
+  "version": "1.0.0",
+  "description": "Frontend application for monorepo example",
+  "main": "src/index.js",
+  "scripts": {
+    "build": "echo 'Building frontend...' && mkdir -p dist && echo 'export default function() { return \"Hello from frontend\"; }' > dist/bundle.js",
+    "test": "echo 'Running frontend tests...' && exit 0",
+    "start": "node src/index.js"
+  },
+  "keywords": ["monorepo", "frontend", "example"],
+  "author": "DevSecOps Team",
+  "license": "MIT",
+  "devDependencies": {}
+}

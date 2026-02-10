@@ -12,6 +12,8 @@
 .build:node:
   extends: .build:base
   image: node:${NODE_VERSION:-20}-alpine
+  before_script:
+    - cd "${PROJECT_PATH:-.}"
   script:
     - corepack enable
     - |
@@ -27,14 +29,16 @@
       fi
   artifacts:
     paths:
-      - .output/
-      - .nuxt/
-      - dist/
-      - node_modules/
+      - ${PROJECT_PATH:-.}/.output/
+      - ${PROJECT_PATH:-.}/.nuxt/
+      - ${PROJECT_PATH:-.}/dist/
+      - ${PROJECT_PATH:-.}/node_modules/
 
 .build:python:
   extends: .build:base
   image: python:${PYTHON_VERSION:-3.12}-slim
+  before_script:
+    - cd "${PROJECT_PATH:-.}"
   script:
     - python -m pip install -U pip
     - |
@@ -48,15 +52,17 @@
       fi
   artifacts:
     paths:
-      - dist/
-      - .venv/
+      - ${PROJECT_PATH:-.}/dist/
+      - ${PROJECT_PATH:-.}/.venv/
 
 .build:php:
   extends: .build:base
   image: php:${PHP_VERSION:-8.3}-cli
+  before_script:
+    - cd "${PROJECT_PATH:-.}"
   script:
     - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
     - composer install --no-interaction --prefer-dist --optimize-autoloader
   artifacts:
     paths:
-      - vendor/
+      - ${PROJECT_PATH:-.}/vendor/

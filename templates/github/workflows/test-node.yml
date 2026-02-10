@@ -1,0 +1,61 @@
+---
+name: Test Node.js
+
+on:
+  workflow_call:
+    inputs:
+      project_path:
+        description: 'Project directory path (for monorepo support)'
+        required: false
+        type: string
+        default: '.'
+      node_version:
+        description: 'Node.js version'
+        required: false
+        type: string
+        default: '20'
+      package_manager:
+        description: 'Package manager (npm, yarn, or pnpm)'
+        required: false
+        type: string
+        default: 'npm'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies and run tests
+        working-directory: ${{ inputs.project_path }}
+        run: |
+          if [ "${{ inputs.package_manager }}" = "pnpm" ]; then
+            pnpm install --frozen-lockfile
+            pnpm test -- --ci
+          elif [ "${{ inputs.package_manager }}" = "yarn" ]; then
+            yarn install --frozen-lockfile
+            yarn test
+          else
+            npm ci
+            npm test
+          fi
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-node
+          path: |
+            ${{ inputs.project_path }}/coverage/
+            ${{ inputs.project_path }}/test-results/
+          retention-days: 7
+          if-no-files-found: ignore

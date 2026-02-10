@@ -1,0 +1,113 @@
+---
+name: Security - Dependency Scanning
+
+on:
+  workflow_call:
+    inputs:
+      project_path:
+        description: 'Project directory path (for monorepo support)'
+        required: false
+        type: string
+        default: '.'
+      language:
+        description: 'Project language (node, python, or php)'
+        required: false
+        type: string
+        default: 'node'
+      security_scanner:
+        description: 'Scanner to use (trivy or specialized)'
+        required: false
+        type: string
+        default: 'trivy'
+      severity:
+        description: 'Severity levels to report'
+        required: false
+        type: string
+        default: 'HIGH,CRITICAL'
+
+jobs:
+  dependency-trivy:
+    if: inputs.security_scanner == 'trivy'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy dependency scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: ${{ inputs.project_path }}
+          scanners: 'vuln'
+          severity: ${{ inputs.severity }}
+          format: 'json'
+          output: 'dependency-scan.json'
+
+      - name: Upload dependency scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-scan-trivy
+          path: dependency-scan.json
+          retention-days: 7
+
+  dependency-specialized:
+    if: inputs.security_scanner == 'specialized'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        if: inputs.language == 'node'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Python
+        if: inputs.language == 'python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Setup PHP
+        if: inputs.language == 'php'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+
+      - name: Run dependency audit
+        working-directory: ${{ inputs.project_path }}
+        run: |
+          case "${{ inputs.language }}" in
+            php)
+              composer audit --format=json > dependency-scan.json || true
+              ;;
+            python)
+              pip install -U pip pip-audit
+              if [ -f "requirements.txt" ]; then
+                pip-audit -r requirements.txt -f json > dependency-scan.json || true
+              else
+                echo "[]" > dependency-scan.json
+              fi
+              ;;
+            node)
+              if [ -f "package-lock.json" ] || [ -f "package.json" ]; then
+                npm audit --json > dependency-scan.json || true
+              else
+                echo "{}" > dependency-scan.json
+              fi
+              ;;
+            *)
+              echo "{}" > dependency-scan.json
+              ;;
+          esac
+
+      - name: Upload dependency scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-scan-specialized
+          path: ${{ inputs.project_path }}/dependency-scan.json
+          retention-days: 7

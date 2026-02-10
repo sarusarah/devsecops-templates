@@ -1,0 +1,126 @@
+---
+name: Security - IaC Scanning
+
+on:
+  workflow_call:
+    inputs:
+      project_path:
+        description: 'Project directory path (for monorepo support)'
+        required: false
+        type: string
+        default: '.'
+      iac_target_dir:
+        description: 'IaC target directory (relative to project_path)'
+        required: false
+        type: string
+        default: 'k8s'
+      security_scanner:
+        description: 'Scanner to use (trivy or specialized)'
+        required: false
+        type: string
+        default: 'trivy'
+      severity:
+        description: 'Severity levels to report'
+        required: false
+        type: string
+        default: 'HIGH,CRITICAL'
+
+jobs:
+  iac-trivy:
+    if: inputs.security_scanner == 'trivy'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check if IaC directory exists
+        id: check_dir
+        run: |
+          TARGET_DIR="${{ inputs.project_path }}/${{ inputs.iac_target_dir }}"
+          if [ -d "${TARGET_DIR}" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "target_dir=${TARGET_DIR}" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "No IaC target dir '${TARGET_DIR}' found. Skipping scan."
+          fi
+
+      - name: Run Trivy IaC scan
+        if: steps.check_dir.outputs.exists == 'true'
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: ${{ steps.check_dir.outputs.target_dir }}
+          severity: ${{ inputs.severity }}
+          format: 'sarif'
+          output: 'iac-report.sarif'
+
+      - name: Upload IaC scan results to GitHub Security
+        if: steps.check_dir.outputs.exists == 'true'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: iac-report.sarif
+
+      - name: Upload IaC scan results
+        if: steps.check_dir.outputs.exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: iac-report-trivy
+          path: iac-report.sarif
+          retention-days: 7
+
+  iac-specialized:
+    if: inputs.security_scanner == 'specialized'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check if IaC directory exists
+        id: check_dir
+        run: |
+          TARGET_DIR="${{ inputs.project_path }}/${{ inputs.iac_target_dir }}"
+          if [ -d "${TARGET_DIR}" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "target_dir=${TARGET_DIR}" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "No IaC target dir '${TARGET_DIR}' found. Skipping scan."
+          fi
+
+      - name: Install IaC scanning tools
+        if: steps.check_dir.outputs.exists == 'true'
+        run: |
+          # Install kubeconform
+          curl -sSL -o /usr/local/bin/kubeconform https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64
+          chmod +x /usr/local/bin/kubeconform
+
+          # Install kube-score
+          curl -sSL -o /usr/local/bin/kubescore https://github.com/zegl/kube-score/releases/latest/download/kube-score_linux_amd64
+          chmod +x /usr/local/bin/kubescore
+
+          # Install polaris
+          curl -sSL -o /usr/local/bin/polaris https://github.com/FairwindsOps/polaris/releases/latest/download/polaris_linux_amd64
+          chmod +x /usr/local/bin/polaris
+
+      - name: Run IaC scanning tools
+        if: steps.check_dir.outputs.exists == 'true'
+        run: |
+          TARGET_DIR="${{ steps.check_dir.outputs.target_dir }}"
+
+          echo "Running kubeconform..."
+          kubeconform -summary -strict "${TARGET_DIR}" || true
+
+          echo "Running kube-score..."
+          find "${TARGET_DIR}" -name '*.yaml' -o -name '*.yml' | head -n 50 | xargs -I{} sh -c 'kubescore score "{}" || true'
+
+          echo "Running polaris..."
+          polaris audit --audit-path "${TARGET_DIR}" --format json > polaris.json || true
+
+      - name: Upload IaC scan results
+        if: steps.check_dir.outputs.exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: iac-report-specialized
+          path: polaris.json
+          retention-days: 7

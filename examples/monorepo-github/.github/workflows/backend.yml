@@ -1,0 +1,59 @@
+---
+name: Backend CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  secrets:
+    name: Secret Scanning
+    uses: platform/devsecops-template/.github/workflows/security-secrets.yml@main
+    with:
+      project_path: backend
+      security_scanner: trivy
+    permissions:
+      contents: read
+
+  build:
+    name: Build
+    uses: platform/devsecops-template/.github/workflows/build-python.yml@main
+    with:
+      project_path: backend
+      python_version: '3.12'
+
+  test:
+    name: Test
+    needs: build
+    uses: platform/devsecops-template/.github/workflows/test-python.yml@main
+    with:
+      project_path: backend
+      python_version: '3.12'
+
+  sast:
+    name: SAST
+    uses: platform/devsecops-template/.github/workflows/security-sast.yml@main
+    with:
+      project_path: backend
+      security_scanner: trivy
+    permissions:
+      contents: read
+      security-events: write
+
+  dependency-scan:
+    name: Dependency Scan
+    uses: platform/devsecops-template/.github/workflows/security-dependency.yml@main
+    with:
+      project_path: backend
+      language: python
+      security_scanner: trivy

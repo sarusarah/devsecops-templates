@@ -1,0 +1,67 @@
+---
+name: Test PHP
+
+on:
+  workflow_call:
+    inputs:
+      project_path:
+        description: 'Project directory path (for monorepo support)'
+        required: false
+        type: string
+        default: '.'
+      php_version:
+        description: 'PHP version'
+        required: false
+        type: string
+        default: '8.3'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ inputs.php_version }}
+          tools: composer
+          coverage: xdebug
+
+      - name: Install dependencies
+        working-directory: ${{ inputs.project_path }}
+        run: |
+          # Install dependencies if vendor doesn't exist from build stage
+          if [ ! -d "vendor" ]; then
+            composer install --no-interaction --prefer-dist --optimize-autoloader
+          fi
+
+      - name: Run PHPUnit tests
+        working-directory: ${{ inputs.project_path }}
+        run: |
+          if [ -f "vendor/bin/phpunit" ]; then
+            vendor/bin/phpunit --coverage-clover coverage.xml
+          elif [ -f "bin/phpunit" ]; then
+            php bin/phpunit --coverage-clover coverage.xml
+          else
+            echo "PHPUnit not found in vendor/bin/phpunit or bin/phpunit"
+            exit 1
+          fi
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-php
+          path: ${{ inputs.project_path }}/coverage.xml
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ${{ inputs.project_path }}/coverage.xml
+          flags: php
+          fail_ci_if_error: false

@@ -63,6 +63,14 @@ variables:
 - Python application
 - PHP Symfony application
 - PHP Drupal application
+- **Monorepo examples** - Frontend (Node.js) + Backend (Python) with independent CI/CD (GitLab CI & GitHub Actions)
+
+### GitHub Actions Support (`templates/github/workflows/`)
+- **Reusable workflows** for GitHub Actions
+- Build workflows (Node.js, Python, PHP)
+- Test workflows with coverage reporting
+- Security workflows (secrets, SAST, dependency, container, IaC)
+- Full monorepo support with `project_path` input parameter
 
 ### Testing Tools
 - **Dagger Module** (`dagger/`) - Local pipeline testing
@@ -135,7 +143,6 @@ gitlab-ci-local --preview
 variables:
   # Unified scanning with Trivy (recommended for consistency)
   SECURITY_SCANNER: "trivy"
-
   # Or use specialized tools for comprehensive analysis
   SECURITY_SCANNER: "specialized"
   SAST_TOOL: "semgrep"  # More thorough SAST
@@ -235,6 +242,126 @@ build-app:
   variables:
     NODE_VERSION: "20"
 ```
+
+---
+
+## Monorepo Support
+
+The DevSecOps templates support monorepos with multiple projects in a single repository. Each project can run CI stages independently with automatic change detection.
+
+### Quick Example
+
+**GitLab CI (.gitlab-ci.yml):**
+```yaml
+include:
+  - project: platform/devsecops-template
+    ref: v1.0.1
+    file:
+      - /templates/base.yml
+      - /templates/build.yml
+      - /templates/security/secrets.yml
+
+# Frontend project - only runs when frontend/ changes
+build:frontend:
+  extends: .build:node
+  variables:
+    PROJECT_PATH: frontend
+    NODE_VERSION: "20"
+  rules:
+    - changes:
+        - frontend/**/*
+
+secrets-detection:frontend:
+  extends: secrets-detection
+  variables:
+    PROJECT_PATH: frontend
+  rules:
+    - changes:
+        - frontend/**/*
+
+# Backend project - only runs when backend/ changes
+build:backend:
+  extends: .build:python
+  variables:
+    PROJECT_PATH: backend
+    PYTHON_VERSION: "3.12"
+  rules:
+    - changes:
+        - backend/**/*
+
+secrets-detection:backend:
+  extends: secrets-detection
+  variables:
+    PROJECT_PATH: backend
+  rules:
+    - changes:
+        - backend/**/*
+```
+
+**GitHub Actions (.github/workflows/frontend.yml):**
+```yaml
+name: Frontend CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'frontend/**'
+
+jobs:
+  build:
+    uses: platform/devsecops-template/.github/workflows/build-node.yml@v1.0.1
+    with:
+      project_path: frontend
+      node_version: '20'
+
+  secrets:
+    uses: platform/devsecops-template/.github/workflows/security-secrets.yml@v1.0.1
+    with:
+      project_path: frontend
+    permissions:
+      contents: read
+```
+
+### Key Features
+
+- **Per-project CI/CD:** Each project runs its own build, test, and security scans
+- **Change detection:** Jobs only run when project files change
+- **Independent deployment:** Projects can be deployed separately
+- **PROJECT_PATH variable:** Scopes all operations to project directory
+- **Efficient:** Reduces CI minutes by only testing affected projects
+
+### How It Works
+
+**GitLab CI:**
+- Use `PROJECT_PATH` variable to specify project directory
+- Use `rules:changes` for automatic change detection
+- Extend base jobs with project-specific configuration
+
+**GitHub Actions:**
+- Create separate workflow files per project
+- Use `paths:` filter for change detection
+- Call reusable workflows with `project_path` input
+
+### Full Example
+
+See complete working examples:
+- **GitLab CI:** [examples/monorepo-gitlab/](examples/monorepo-gitlab/)
+- **GitHub Actions:** [examples/monorepo-github/](examples/monorepo-github/)
+
+Each example includes:
+- Frontend (Node.js) and Backend (Python) projects
+- Complete CI/CD configurations
+- Change detection rules
+- Documentation and best practices
+
+### Benefits
+
+**Faster CI/CD** - Only affected projects run
+**Clear separation** - Each project has explicit CI configuration
+**Independent deployment** - Different release cadences per project
+**Scalable** - Easy to add new projects
+**KISS principle** - Simple, no complex logic or dynamic generation
 
 ---
 
@@ -470,5 +597,74 @@ unable to find the specified image "registry/project:tag"
    ```
 
 See [Container Scanning Configuration Guide](#container-scanning-configuration) for detailed examples.
+
+### Monorepo: Jobs Running for All Changes
+
+**Problem:** Jobs run even when their project hasn't changed
+
+**GitLab CI Solution:**
+```yaml
+rules:
+  - changes:
+      - frontend/**/*  # Must include /**/* suffix
+```
+
+**GitHub Actions Solution:**
+```yaml
+on:
+  push:
+    paths:
+      - 'frontend/**'  # Ensure quotes and correct path
+```
+
+### Monorepo: Security Scans Scanning Entire Repository
+
+**Problem:** Security scans analyze all projects instead of just one
+
+**Solution:** Verify PROJECT_PATH (GitLab) or project_path (GitHub) is set:
+
+**GitLab CI:**
+```yaml
+secrets-detection:frontend:
+  extends: secrets-detection
+  variables:
+    PROJECT_PATH: frontend  # Must be set
+```
+
+**GitHub Actions:**
+```yaml
+secrets:
+  uses: platform/devsecops-template/.github/workflows/security-secrets.yml@main
+  with:
+    project_path: frontend  # Must be set
+```
+
+### Monorepo: Build Artifacts Not Found
+
+**Problem:** Downstream jobs can't find artifacts from build stage
+
+**GitLab CI Solution:** Artifact paths must include PROJECT_PATH prefix:
+```yaml
+artifacts:
+  paths:
+    - ${PROJECT_PATH:-.}/dist/  # Correct
+    # NOT: - dist/  # Wrong - looks at repo root
+```
+
+**GitHub Actions Solution:** Ensure working-directory is set in all steps:
+```yaml
+- name: Build
+  working-directory: ${{ inputs.project_path }}
+  run: npm run build
+```
+
+### Monorepo: Dependencies Not Found During Build
+
+**Problem:** Build fails with "module not found" or "package not found"
+
+**Solution:** Ensure working directory is set before dependency installation:
+
+**GitLab CI:** Jobs should use `cd "${PROJECT_PATH:-.}"` in before_script
+**GitHub Actions:** Jobs should use `working-directory: ${{ inputs.project_path }}` in steps
 
 ---

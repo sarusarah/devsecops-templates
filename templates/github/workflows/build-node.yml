@@ -1,0 +1,62 @@
+---
+name: Build Node.js
+
+on:
+  workflow_call:
+    inputs:
+      project_path:
+        description: 'Project directory path (for monorepo support)'
+        required: false
+        type: string
+        default: '.'
+      node_version:
+        description: 'Node.js version'
+        required: false
+        type: string
+        default: '20'
+      package_manager:
+        description: 'Package manager (npm, yarn, or pnpm)'
+        required: false
+        type: string
+        default: 'npm'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies and build
+        working-directory: ${{ inputs.project_path }}
+        run: |
+          if [ "${{ inputs.package_manager }}" = "pnpm" ]; then
+            pnpm install --frozen-lockfile
+            pnpm build
+          elif [ "${{ inputs.package_manager }}" = "yarn" ]; then
+            yarn install --frozen-lockfile
+            yarn build
+          else
+            npm ci
+            npm run build
+          fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-node
+          path: |
+            ${{ inputs.project_path }}/.output/
+            ${{ inputs.project_path }}/.nuxt/
+            ${{ inputs.project_path }}/dist/
+            ${{ inputs.project_path }}/node_modules/
+          retention-days: 1
+          if-no-files-found: ignore

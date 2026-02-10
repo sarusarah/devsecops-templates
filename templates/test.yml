@@ -12,6 +12,8 @@
 .test:node:
   extends: .test:base
   image: node:${NODE_VERSION:-20}-alpine
+  before_script:
+    - cd "${PROJECT_PATH:-.}"
   script:
     - corepack enable
     - |
@@ -29,6 +31,8 @@
 .test:python:
   extends: .test:base
   image: python:${PYTHON_VERSION:-3.12}-slim
+  before_script:
+    - cd "${PROJECT_PATH:-.}"
   script:
     - python -m pip install -U pip
     - pip install pytest pytest-cov
@@ -37,18 +41,19 @@
       pytest -q --junitxml=junit.xml --cov=. --cov-report=xml:coverage.xml
   artifacts:
     reports:
-      junit: junit.xml
+      junit: ${PROJECT_PATH:-.}/junit.xml
       coverage_report:
         coverage_format: cobertura
-        path: coverage.xml
+        path: ${PROJECT_PATH:-.}/coverage.xml
     paths:
-      - junit.xml
-      - coverage.xml
+      - ${PROJECT_PATH:-.}/junit.xml
+      - ${PROJECT_PATH:-.}/coverage.xml
 
 .test:phpunit:
   extends: .test:base
   image: php:${PHP_VERSION:-8.3}-cli
   before_script:
+    - cd "${PROJECT_PATH:-.}"
     - php -v
     - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
     - |
@@ -70,6 +75,6 @@
     reports:
       coverage_report:
         coverage_format: cobertura
-        path: coverage.xml
+        path: ${PROJECT_PATH:-.}/coverage.xml
     paths:
-      - coverage.xml
+      - ${PROJECT_PATH:-.}/coverage.xml

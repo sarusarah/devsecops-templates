@@ -1,0 +1,134 @@
+---
+# Monorepo Example - GitLab CI Configuration
+# This demonstrates how to use DevSecOps templates with monorepo support
+
+include:
+  # Include DevSecOps templates
+  - project: platform/devsecops-template
+    ref: main  # Use specific version tag in production (e.g., v1.0.1)
+    file:
+      - /templates/base.yml
+      - /templates/build.yml
+      - /templates/test.yml
+      - /templates/security/secrets.yml
+      - /templates/security/sast.yml
+      - /templates/security/dependency.yml
+
+# Global variables (optional)
+variables:
+  SECURITY_SCANNER: "trivy"  # Use trivy for unified scanning
+
+# ============================================================================
+# Frontend Jobs - Only run when frontend/ changes
+# ============================================================================
+
+secrets-detection:frontend:
+  extends: secrets-detection
+  variables:
+    PROJECT_PATH: frontend
+  rules:
+    - changes:
+        - frontend/**/*
+      if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      changes:
+        - frontend/**/*
+
+build:frontend:
+  extends: .build:node
+  variables:
+    PROJECT_PATH: frontend
+    NODE_VERSION: "20"
+    PACKAGE_MANAGER: "npm"
+  rules:
+    - changes:
+        - frontend/**/*
+
+test:frontend:
+  extends: .test:node
+  variables:
+    PROJECT_PATH: frontend
+  rules:
+    - changes:
+        - frontend/**/*
+  needs:
+    - build:frontend
+
+sast:frontend:
+  extends: sast
+  variables:
+    PROJECT_PATH: frontend
+  rules:
+    - changes:
+        - frontend/**/*
+
+dependency-scan:frontend:
+  extends: dependency-scanning
+  variables:
+    PROJECT_PATH: frontend
+  rules:
+    - changes:
+        - frontend/**/*
+
+# ============================================================================
+# Backend Jobs - Only run when backend/ changes
+# ============================================================================
+
+secrets-detection:backend:
+  extends: secrets-detection
+  variables:
+    PROJECT_PATH: backend
+  rules:
+    - changes:
+        - backend/**/*
+      if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      changes:
+        - backend/**/*
+
+build:backend:
+  extends: .build:python
+  variables:
+    PROJECT_PATH: backend
+    PYTHON_VERSION: "3.12"
+  rules:
+    - changes:
+        - backend/**/*
+
+test:backend:
+  extends: .test:python
+  variables:
+    PROJECT_PATH: backend
+  rules:
+    - changes:
+        - backend/**/*
+  needs:
+    - build:backend
+
+sast:backend:
+  extends: sast
+  variables:
+    PROJECT_PATH: backend
+  rules:
+    - changes:
+        - backend/**/*
+
+dependency-scan:backend:
+  extends: dependency-scanning
+  variables:
+    PROJECT_PATH: backend
+  rules:
+    - changes:
+        - backend/**/*
+
+# ============================================================================
+# Root-level scans - Always run (scan entire repository)
+# ============================================================================
+
+secrets-detection:root:
+  extends: secrets-detection
+  variables:
+    PROJECT_PATH: "."
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
