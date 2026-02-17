@@ -1,0 +1,168 @@
+---
+name: Security - Dependency-Track SBOM Upload
+
+on:
+  workflow_call:
+    inputs:
+      project_path:
+        description: 'Project directory path (for monorepo support)'
+        required: false
+        type: string
+        default: '.'
+      dtrack_url:
+        description: 'Dependency-Track base URL (e.g., https://api.dtrack.example.com)'
+        required: true
+        type: string
+      dtrack_project_uuid:
+        description: 'DTrack project UUID (optional - takes precedence over auto-create)'
+        required: false
+        type: string
+        default: ''
+      dtrack_project_name:
+        description: 'DTrack project name (optional - overrides auto-generated name)'
+        required: false
+        type: string
+        default: ''
+      dtrack_project_version:
+        description: 'DTrack project version (optional - defaults to branch/tag name)'
+        required: false
+        type: string
+        default: ''
+    secrets:
+      dtrack_api_key:
+        description: 'Dependency-Track API key'
+        required: true
+
+jobs:
+  dtrack-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Trivy
+        run: |
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
+
+      - name: Generate CycloneDX SBOM
+        working-directory: ${{ inputs.project_path }}
+        run: |
+          echo "================================================"
+          echo "Generating CycloneDX SBOM for Dependency-Track"
+          echo "Scan path: ${{ inputs.project_path }}"
+          echo "================================================"
+
+          trivy --version
+
+          trivy fs \
+            --format cyclonedx \
+            --output bom.json \
+            .
+
+          if [ ! -f "bom.json" ]; then
+            echo "ERROR: Failed to generate SBOM"
+            exit 1
+          fi
+
+          SBOM_SIZE=$(stat -c%s bom.json)
+          echo "SBOM generated successfully (${SBOM_SIZE} bytes)"
+
+      - name: Upload SBOM to Dependency-Track
+        working-directory: ${{ inputs.project_path }}
+        env:
+          DTRACK_URL: ${{ inputs.dtrack_url }}
+          DTRACK_API_KEY: ${{ secrets.dtrack_api_key }}
+          DTRACK_PROJECT_UUID: ${{ inputs.dtrack_project_uuid }}
+          DTRACK_PROJECT_NAME: ${{ inputs.dtrack_project_name }}
+          DTRACK_PROJECT_VERSION: ${{ inputs.dtrack_project_version }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          PROJECT_PATH: ${{ inputs.project_path }}
+        run: |
+          set -e
+
+          # Base64 encode the SBOM
+          BOM_B64=$(base64 -w 0 < bom.json)
+
+          # Construct project identification
+          if [ -n "$DTRACK_PROJECT_UUID" ]; then
+            # Option 1: Use explicit project UUID
+            echo "Using explicit project UUID"
+            PAYLOAD=$(jq -n \
+              --arg project "$DTRACK_PROJECT_UUID" \
+              --arg bom "$BOM_B64" \
+              '{project: $project, bom: $bom}')
+          else
+            # Option 2: Auto-create with project name and version
+            # Construct project name (monorepo support)
+            if [ -n "$DTRACK_PROJECT_NAME" ]; then
+              PROJECT_NAME="$DTRACK_PROJECT_NAME"
+            else
+              PROJECT_NAME="$GITHUB_REPOSITORY"
+              if [ "$PROJECT_PATH" != "." ] && [ -n "$PROJECT_PATH" ]; then
+                PROJECT_NAME="${GITHUB_REPOSITORY}/${PROJECT_PATH}"
+              fi
+            fi
+
+            # Determine version
+            if [ -n "$DTRACK_PROJECT_VERSION" ]; then
+              VERSION="$DTRACK_PROJECT_VERSION"
+            else
+              VERSION="$GITHUB_REF_NAME"
+            fi
+
+            echo "Using auto-create with project name and version"
+            echo "Project Name: ${PROJECT_NAME}"
+            echo "Project Version: ${VERSION}"
+
+            PAYLOAD=$(jq -n \
+              --arg name "$PROJECT_NAME" \
+              --arg version "$VERSION" \
+              --arg bom "$BOM_B64" \
+              '{projectName: $name, projectVersion: $version, bom: $bom}')
+          fi
+
+          echo "================================================"
+          echo "Uploading SBOM to Dependency-Track"
+          echo "DTrack URL: ${DTRACK_URL}"
+          echo "================================================"
+
+          # Upload to Dependency-Track
+          RESPONSE_FILE="dtrack-response.json"
+          HTTP_CODE=$(curl -w "%{http_code}" -o "$RESPONSE_FILE" \
+            --retry 1 \
+            --retry-delay 5 \
+            --max-time 60 \
+            -X PUT "${DTRACK_URL}/api/v1/bom" \
+            -H "Content-Type: application/json" \
+            -H "X-Api-Key: ${DTRACK_API_KEY}" \
+            -d "$PAYLOAD")
+
+          echo "HTTP Status Code: ${HTTP_CODE}"
+
+          # Check response
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+            echo "✓ SBOM uploaded successfully"
+            if [ -f "$RESPONSE_FILE" ] && [ -s "$RESPONSE_FILE" ]; then
+              echo "Response:"
+              cat "$RESPONSE_FILE" | jq . || cat "$RESPONSE_FILE"
+            fi
+          else
+            echo "✗ Failed to upload SBOM"
+            echo "Response:"
+            cat "$RESPONSE_FILE" | jq . || cat "$RESPONSE_FILE"
+            exit 1
+          fi
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dtrack-sbom-${{ inputs.project_path != '.' && inputs.project_path || 'root' }}
+          path: |
+            ${{ inputs.project_path }}/bom.json
+            ${{ inputs.project_path }}/dtrack-response.json
+          retention-days: 7

@@ -19,11 +19,17 @@ include:
       - /templates/security/secrets.yml
       - /templates/security/dependency.yml
       - /templates/security/sast.yml
+      - /templates/security/dtrack.yml  # Optional: SBOM upload to Dependency-Track
 
 variables:
   LANGUAGE: "node"  # or python, php
   ENABLE_DAST: "true"
   STAGING_URL: "https://staging.example.com"
+
+  # Optional: Enable Dependency-Track integration
+  ENABLE_DTRACK: "true"
+  DTRACK_URL: "https://api.dtrack.example.com"
+  DTRACK_API_KEY: "${DTRACK_API_KEY}"
 
 # Your custom jobs here...
 ```
@@ -49,6 +55,9 @@ variables:
 **Runtime Security**
 - **DAST** - OWASP ZAP dynamic application security testing
 
+**SBOM & Dependency Tracking**
+- **Dependency-Track Integration** - Upload CycloneDX SBOMs to Dependency-Track for centralized dependency and vulnerability tracking
+
 ### Pipeline Templates (`templates/`)
 - **Base Configuration** - Stages, rules, and variables
 - **Workflow Rules** - When pipelines should run
@@ -69,7 +78,7 @@ variables:
 - **Reusable workflows** for GitHub Actions
 - Build workflows (Node.js, Python, PHP)
 - Test workflows with coverage reporting
-- Security workflows (secrets, SAST, dependency, container, IaC)
+- Security workflows (secrets, SAST, dependency, container, IaC, Dependency-Track)
 - Full monorepo support with `project_path` input parameter
 
 ### Testing Tools
@@ -395,6 +404,7 @@ ENABLE_SAST: "true"
 ENABLE_CONTAINER_SCAN: "false"
 ENABLE_IAC_SCAN: "false"
 ENABLE_DAST: "false"
+ENABLE_DTRACK: "false"  # Dependency-Track SBOM upload
 
 # Security policy
 SECURITY_POLICY: "strict"  # strict|permissive
@@ -411,6 +421,8 @@ IMAGE_TAG: "${CI_COMMIT_SHA}"
 ### Container Scanning Configuration
 
 The container scanning template scans Docker images for vulnerabilities using Trivy. It supports various deployment patterns and custom image naming schemes.
+
+**📖 Full Documentation:** [docs/CONTAINER_SCANNING.md](docs/CONTAINER_SCANNING.md)
 
 #### Basic Configuration
 
@@ -495,6 +507,50 @@ The template builds the image reference as follows:
 - `IMAGE_NAME=registry/project`, `IMAGE_TAG=v1.0` → `registry/project:v1.0`
 - `IMAGE_NAME=registry/project`, `CONTAINER_IMAGE_SUFFIX=staging`, `IMAGE_TAG=latest` → `registry/project/staging:latest`
 
+### Dependency-Track Integration
+
+Upload Software Bill of Materials (SBOM) to Dependency-Track for centralized dependency and vulnerability tracking. Supports both single-project and monorepo configurations with automatic project creation.
+
+**📖 Full Documentation:** [docs/DEPENDENCY_TRACK.md](docs/DEPENDENCY_TRACK.md)
+
+#### Quick Start (GitLab CI)
+
+```yaml
+include:
+  - project: platform/devsecops-template
+    ref: v1.0.1
+    file:
+      - /templates/base.yml
+      - /templates/security/dtrack.yml
+
+variables:
+  ENABLE_DTRACK: "true"
+  DTRACK_URL: "https://api.dtrack.example.com"
+  DTRACK_API_KEY: "${DTRACK_API_KEY}"  # Set as CI/CD secret
+```
+
+#### Quick Start (GitHub Actions)
+
+```yaml
+jobs:
+  dtrack:
+    uses: platform/devsecops-template/.github/workflows/security-dtrack.yml@v1.0.1
+    with:
+      dtrack_url: "https://api.dtrack.example.com"
+    secrets:
+      dtrack_api_key: ${{ secrets.DTRACK_API_KEY }}
+```
+
+#### Key Variables
+
+| Variable (GitLab) / Input (GitHub) | Description |
+|------------------------------------|-------------|
+| `DTRACK_URL` / `dtrack_url` | DTrack base URL (required) |
+| `DTRACK_API_KEY` / `dtrack_api_key` | DTrack API key (required, secret) |
+| `PROJECT_PATH` / `project_path` | Monorepo subproject path (e.g., `frontend`) |
+| `DTRACK_PROJECT_UUID` / `dtrack_project_uuid` | Explicit project UUID (optional) |
+
+**For complete configuration options, monorepo examples, and troubleshooting, see [docs/DEPENDENCY_TRACK.md](docs/DEPENDENCY_TRACK.md)**
 
 ### GitOps Deployment
 ```yaml
@@ -597,6 +653,10 @@ unable to find the specified image "registry/project:tag"
    ```
 
 See [Container Scanning Configuration Guide](#container-scanning-configuration) for detailed examples.
+
+### Dependency-Track Issues
+
+For Dependency-Track troubleshooting (authentication errors, project not found, network timeouts, empty SBOMs, monorepo configuration), see **[docs/DEPENDENCY_TRACK.md](docs/DEPENDENCY_TRACK.md#troubleshooting)**
 
 ### Monorepo: Jobs Running for All Changes
 

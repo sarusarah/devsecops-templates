@@ -57,3 +57,13 @@ jobs:
       project_path: backend
       language: python
       security_scanner: trivy
+
+  # Uncomment to enable Dependency-Track SBOM upload
+  # dtrack:
+  #   name: Upload SBOM to Dependency-Track
+  #   uses: platform/devsecops-template/.github/workflows/security-dtrack.yml@main
+  #   with:
+  #     project_path: backend
+  #     dtrack_url: ${{ vars.DTRACK_URL }}
+  #   secrets:
+  #     dtrack_api_key: ${{ secrets.DTRACK_API_KEY }}

@@ -13,10 +13,17 @@ include:
       - /templates/security/secrets.yml
       - /templates/security/sast.yml
       - /templates/security/dependency.yml
+      - /templates/security/dtrack.yml
 
 # Global variables (optional)
 variables:
   SECURITY_SCANNER: "trivy"  # Use trivy for unified scanning
+
+  # Dependency-Track SBOM upload (optional)
+  # Uncomment and configure to enable
+  # ENABLE_DTRACK: "true"
+  # DTRACK_URL: "https://api.dtrack.example.com"
+  # DTRACK_API_KEY: "${DTRACK_API_KEY}"  # Set as CI/CD secret variable
 
 # ============================================================================
 # Frontend Jobs - Only run when frontend/ changes
@@ -70,6 +77,16 @@ dependency-scan:frontend:
     - changes:
         - frontend/**/*
 
+dtrack-upload:frontend:
+  extends: dtrack-upload
+  variables:
+    PROJECT_PATH: frontend
+    ENABLE_DTRACK: "true"
+  rules:
+    - if: '$ENABLE_DTRACK == "true"'
+      changes:
+        - frontend/**/*
+
 # ============================================================================
 # Backend Jobs - Only run when backend/ changes
 # ============================================================================
@@ -119,6 +136,16 @@ dependency-scan:backend:
     PROJECT_PATH: backend
   rules:
     - changes:
+        - backend/**/*
+
+dtrack-upload:backend:
+  extends: dtrack-upload
+  variables:
+    PROJECT_PATH: backend
+    ENABLE_DTRACK: "true"
+  rules:
+    - if: '$ENABLE_DTRACK == "true"'
+      changes:
         - backend/**/*
 
 # ============================================================================

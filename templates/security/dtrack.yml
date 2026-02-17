@@ -1,0 +1,155 @@
+---
+# OWASP SPVS: Develop Phase - Source code security
+# Software Bill of Materials (SBOM) - Upload dependency inventory to Dependency-Track
+#
+# Generates CycloneDX SBOM using Trivy and uploads to Dependency-Track for centralized
+# dependency and vulnerability tracking across all projects.
+#
+# Quick Start:
+#   variables:
+#     ENABLE_DTRACK: "true"
+#     DTRACK_URL: "https://api.dtrack.example.com"
+#     DTRACK_API_KEY: "${DTRACK_API_KEY}"  # Set as CI/CD secret
+#
+# Project Identification:
+#   Option 1 - Use existing project UUID:
+#     DTRACK_PROJECT_UUID: "abc-123-def-456"
+#
+#   Option 2 - Auto-create project with name+version:
+#     # Leave DTRACK_PROJECT_UUID unset
+#     # Project name auto-generated from CI_PROJECT_PATH
+#     # For monorepo: Set PROJECT_PATH (e.g., "frontend") → creates "platform/repo/frontend"
+#
+# Variables:
+#   ENABLE_DTRACK: "true"               # Enable DTrack upload (default: false)
+#   DTRACK_URL: ""                      # Required: DTrack base URL
+#   DTRACK_API_KEY: ""                  # Required: DTrack API key (use CI/CD secret)
+#   DTRACK_PROJECT_UUID: ""             # Optional: Explicit project UUID (takes precedence)
+#   DTRACK_PROJECT_NAME: ""             # Optional: Override auto-generated project name
+#   DTRACK_PROJECT_VERSION: ""          # Optional: Override version (default: CI_COMMIT_TAG or CI_COMMIT_SHORT_SHA)
+#   PROJECT_PATH: ""                    # Optional: Monorepo subproject path (e.g., "frontend")
+
+dtrack-upload:
+  stage: source
+  image: aquasec/trivy:0.58.1
+  before_script:
+    - |
+      # Install dependencies for base64 encoding and API calls
+      apk add --no-cache curl jq coreutils
+  script:
+    - trivy --version
+    - |
+      set -e
+
+      # Validate required variables
+      if [ -z "$DTRACK_URL" ]; then
+        echo "ERROR: DTRACK_URL is required but not set"
+        exit 1
+      fi
+
+      if [ -z "$DTRACK_API_KEY" ]; then
+        echo "ERROR: DTRACK_API_KEY is required but not set"
+        exit 1
+      fi
+
+      # Determine project path (monorepo support)
+      SCAN_PATH="${PROJECT_PATH:-.}"
+
+      echo "================================================"
+      echo "Generating CycloneDX SBOM for Dependency-Track"
+      echo "Scan path: ${SCAN_PATH}"
+      echo "================================================"
+
+      # Generate CycloneDX SBOM
+      trivy fs \
+        --format cyclonedx \
+        --output bom.json \
+        "${SCAN_PATH}"
+
+      # Check if SBOM was generated
+      if [ ! -f "bom.json" ]; then
+        echo "ERROR: Failed to generate SBOM"
+        exit 1
+      fi
+
+      SBOM_SIZE=$(stat -c%s bom.json)
+      echo "SBOM generated successfully (${SBOM_SIZE} bytes)"
+
+      # Base64 encode the SBOM
+      BOM_B64=$(base64 -w 0 < bom.json)
+
+      # Construct project identification
+      if [ -n "$DTRACK_PROJECT_UUID" ]; then
+        # Option 1: Use explicit project UUID
+        echo "Using explicit project UUID"
+        PAYLOAD=$(jq -n \
+          --arg project "$DTRACK_PROJECT_UUID" \
+          --arg bom "$BOM_B64" \
+          '{project: $project, bom: $bom}')
+      else
+        # Option 2: Auto-create with project name and version
+        # Construct project name (monorepo support)
+        if [ -n "$DTRACK_PROJECT_NAME" ]; then
+          PROJECT_NAME="$DTRACK_PROJECT_NAME"
+        else
+          PROJECT_NAME="${CI_PROJECT_PATH}"
+          if [ -n "$PROJECT_PATH" ]; then
+            PROJECT_NAME="${CI_PROJECT_PATH}/${PROJECT_PATH}"
+          fi
+        fi
+
+        # Determine version
+        PROJECT_VERSION="${DTRACK_PROJECT_VERSION:-${CI_COMMIT_TAG:-${CI_COMMIT_SHORT_SHA}}}"
+
+        echo "Using auto-create with project name and version"
+        echo "Project Name: ${PROJECT_NAME}"
+        echo "Project Version: ${PROJECT_VERSION}"
+
+        PAYLOAD=$(jq -n \
+          --arg name "$PROJECT_NAME" \
+          --arg version "$PROJECT_VERSION" \
+          --arg bom "$BOM_B64" \
+          '{projectName: $name, projectVersion: $version, bom: $bom}')
+      fi
+
+      echo "================================================"
+      echo "Uploading SBOM to Dependency-Track"
+      echo "DTrack URL: ${DTRACK_URL}"
+      echo "================================================"
+
+      # Upload to Dependency-Track with retry
+      RESPONSE_FILE="dtrack-response.json"
+      HTTP_CODE=$(curl -w "%{http_code}" -o "$RESPONSE_FILE" \
+        --retry 1 \
+        --retry-delay 5 \
+        --max-time 60 \
+        -X PUT "${DTRACK_URL}/api/v1/bom" \
+        -H "Content-Type: application/json" \
+        -H "X-Api-Key: ${DTRACK_API_KEY}" \
+        -d "$PAYLOAD")
+
+      echo "HTTP Status Code: ${HTTP_CODE}"
+
+      # Check response
+      if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+        echo "✓ SBOM uploaded successfully"
+        if [ -f "$RESPONSE_FILE" ] && [ -s "$RESPONSE_FILE" ]; then
+          echo "Response:"
+          cat "$RESPONSE_FILE" | jq . || cat "$RESPONSE_FILE"
+        fi
+      else
+        echo "✗ Failed to upload SBOM"
+        echo "Response:"
+        cat "$RESPONSE_FILE" | jq . || cat "$RESPONSE_FILE"
+        exit 1
+      fi
+  rules:
+    - if: '$ENABLE_DTRACK == "true"'
+    - when: never
+  allow_failure: false
+  artifacts:
+    when: always
+    expire_in: 7 days
+    paths:
+      - bom.json
+      - dtrack-response.json

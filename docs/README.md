@@ -13,13 +13,23 @@ Use this when:
 - You want variable reference
 
 ### Comprehensive Guide
-**[../templates/security/CONTAINER_SCANNING.md](../templates/security/CONTAINER_SCANNING.md)** - Complete reference
+**[CONTAINER_SCANNING.md](CONTAINER_SCANNING.md)** - Complete reference
 
 Use this when:
 - Setting up container scanning for the first time
 - Need detailed explanations
 - Want to understand how it works
 - Looking for advanced configurations
+
+## Dependency-Track Integration
+
+**[DEPENDENCY_TRACK.md](DEPENDENCY_TRACK.md)** - Complete guide for SBOM upload to Dependency-Track
+
+Use this when:
+- Setting up Dependency-Track integration
+- Configuring monorepo SBOM uploads
+- Troubleshooting authentication or upload issues
+- Looking for examples and best practices
 
 ## Other Documentation
 

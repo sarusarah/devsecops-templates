@@ -66,6 +66,45 @@ dagger call sast-scanning --source=../examples/node
 dagger call container-scanning --image-name=myapp --image-tag=latest
 ```
 
+#### Dependency-Track SBOM Testing
+
+Test SBOM generation and payload construction (no real upload):
+
+```bash
+# Test single project
+dagger call dtrack-test --source=../examples/node
+
+# Test monorepo with project path
+dagger call dtrack-test --source=../examples/monorepo-gitlab --project-path=frontend
+
+# Test with UUID-based identification
+dagger call dtrack-test --source=../examples/node --test-uuid=abc-123-def
+
+# Test with auto-create (name + version)
+dagger call dtrack-test --source=../examples/node \
+  --project-name=myorg/myproject \
+  --project-version=1.0.0
+```
+
+Upload to real Dependency-Track instance (requires credentials):
+
+```bash
+# Upload with auto-create
+dagger call dtrack-upload \
+  --source=../examples/node \
+  --dtrack-url=https://api.dtrack.example.com \
+  --dtrack-api-key=env:DTRACK_API_KEY \
+  --project-name=myorg/myproject \
+  --project-version=1.0.0
+
+# Upload with explicit UUID
+dagger call dtrack-upload \
+  --source=../examples/node \
+  --dtrack-url=https://api.dtrack.example.com \
+  --dtrack-api-key=env:DTRACK_API_KEY \
+  --project-uuid=abc-123-def-456
+```
+
 ### Build & Test
 
 #### Build Node.js Application
@@ -104,6 +143,8 @@ dagger call validate-yaml --yaml-file=../examples/node/.gitlab-ci.yml
 | `dependency-scanning` | Scans dependencies for vulnerabilities |
 | `sast-scanning` | Runs SAST with Semgrep |
 | `container-scanning` | Scans container images with Trivy |
+| `dtrack-test` | Tests DTrack SBOM generation and payload (no upload) |
+| `dtrack-upload` | Uploads SBOM to real Dependency-Track instance |
 | `build-node` | Builds a Node.js application |
 | `test-node` | Runs Node.js tests |
 | `validate-yaml` | Validates GitLab CI YAML syntax |

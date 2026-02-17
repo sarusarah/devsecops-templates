@@ -7,6 +7,7 @@ include:
       - /templates/security/secrets.yml
       - /templates/security/dependency.yml
       - /templates/security/sast.yml
+      - /templates/security/dtrack.yml
       - /templates/gitops/deploy-staging.yml
       - /templates/gitops/deploy-production.yml
       - /templates/monitor.yml
@@ -24,6 +25,11 @@ variables:
   ENABLE_DAST: "true"
   STAGING_URL: "https://staging.example.com"
   GITOPS_REPO: "git@gitlab.example.com:gitops/nuxt-app.git"
+
+  # Dependency-Track SBOM upload (optional)
+  ENABLE_DTRACK: "false"  # Set to "true" and configure DTRACK_URL + DTRACK_API_KEY to enable
+  # DTRACK_URL: "https://api.dtrack.example.com"
+  # DTRACK_API_KEY: "${DTRACK_API_KEY}"  # Set as CI/CD secret variable
 
 # Team-spezifische Implementierung via extends, ohne Template zu kopieren
 build-application:
