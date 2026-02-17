@@ -55,8 +55,8 @@ lint:templates:
   script:
     - echo "Validating template structure..."
     - |
-      # Check that all security templates have proper structure
-      for template in templates/security/*.yml; do
+      # Check that all GitLab security templates have proper structure
+      for template in templates/gitlab/security/*.yml; do
         echo "Checking structure: $template"
 
         # Check for OWASP SPVS comments
@@ -92,8 +92,8 @@ lint:stages:
       VALID_STAGES="source build test package stage verify deploy operate report"
 
       # Check templates for valid stage names
-      echo "Checking security templates..."
-      for template in templates/security/*.yml; do
+      echo "Checking GitLab security templates..."
+      for template in templates/gitlab/security/*.yml; do
         # Extract stage names from template
         stages=$(grep "^  stage:" "$template" | awk '{print $2}' || true)
 
@@ -110,8 +110,8 @@ lint:stages:
       # Check base.yml has all required stages
       echo "Checking base.yml for required stages..."
       for required_stage in $VALID_STAGES; do
-        if ! grep -Fq -- "- $required_stage" templates/base.yml; then
-          echo "Required stage '$required_stage' missing in templates/base.yml"
+        if ! grep -Fq -- "- $required_stage" templates/gitlab/base.yml; then
+          echo "Required stage '$required_stage' missing in templates/gitlab/base.yml"
           exit 1
         fi
       done
