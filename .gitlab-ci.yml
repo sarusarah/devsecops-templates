@@ -31,9 +31,6 @@ workflow:
 lint:yaml:
   stage: validate
 
-lint:gitlab-ci:
-  stage: validate
-
 lint:templates:
   stage: validate
 
@@ -43,8 +40,22 @@ lint:stages:
 lint:documentation:
   stage: validate
 
-# Security: Scan for secrets
-security:secrets:
+# Defense in depth: Two-tier security scanning strategy
+#
+# Tier 1 (Fast): Gitleaks specializes in secret detection, runs on all MRs/commits
+#   - Catches hardcoded credentials, API keys, tokens before merge
+#   - Fast execution (~10-30 seconds)
+#   - Blocks pipeline if secrets found
+#
+# Tier 2 (Comprehensive): Trivy multi-scanner, runs only on default branch
+#   - Scans for vulnerabilities, secrets, and misconfigurations
+#   - Slower but more comprehensive (~1-2 minutes)
+#   - Validates overall security posture after merge
+#
+# Why both? Gitleaks catches secrets early (better UX), Trivy provides defense in depth
+# and catches things Gitleaks might miss, plus scans for other security issues.
+
+security:secrets-gitleaks:
   stage: validate
   image: zricethezav/gitleaks:v8.21.2
   script:
@@ -52,21 +63,35 @@ security:secrets:
   rules:
     - when: on_success
 
-# Security: Scan project with Trivy
-security:trivy:
+security:comprehensive-trivy:
   stage: validate
   image: aquasec/trivy:0.58.1
   script:
     - trivy fs --scanners vuln,secret,misconfig --severity HIGH,CRITICAL .
-  allow_failure: true
   rules:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      when: on_success
+    - when: never
 
 # ============================================================================
 # STAGE: test - Template validation
 # ============================================================================
 
-# Validate template composition
+# Validate template composition - ensures no job name conflicts when templates are combined
+#
+# This test simulates how users compose multiple templates together in their .gitlab-ci.yml:
+#   include:
+#     - local: templates/gitlab/base.yml
+#     - local: templates/gitlab/security/secrets.yml
+#     - local: templates/gitlab/security/dependency.yml
+#
+# It verifies that:
+#   1. All referenced templates can be loaded successfully
+#   2. No two templates define jobs with the same name (which would cause conflicts)
+#   3. The composition results in a valid CI/CD configuration
+#
+# This prevents breaking changes where a template accidentally reuses a job name
+# from another template, causing user pipelines to fail.
 test:composition:
   stage: test
   image: python:3.12-slim
@@ -75,8 +100,8 @@ test:composition:
     - |
       python3 << 'EOF'
       import yaml, sys
-      templates = ["templates/base.yml", "templates/security/secrets.yml",
-                   "templates/security/dependency.yml", "templates/security/sast.yml"]
+      templates = ["templates/gitlab/base.yml", "templates/gitlab/security/secrets.yml",
+                   "templates/gitlab/security/dependency.yml", "templates/gitlab/security/sast.yml"]
       jobs = {}
       for t in templates:
         content = yaml.safe_load(open(t))

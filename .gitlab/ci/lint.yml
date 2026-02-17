@@ -20,34 +20,6 @@ lint:yaml:
   rules:
     - when: always
 
-# Validate GitLab CI syntax using gitlab-ci-lint
-lint:gitlab-ci:
-  stage: test
-  image: python:3.12-slim
-  before_script:
-    - pip install -q pyyaml
-  script:
-    - echo "Validating GitLab CI configuration files..."
-    - |
-      # Validate main .gitlab-ci.yml
-      if [ -f ".gitlab-ci.yml" ]; then
-        echo "Validating .gitlab-ci.yml"
-        python3 -c "import yaml; yaml.safe_load(open('.gitlab-ci.yml'))" || \
-          (echo ".gitlab-ci.yml has invalid YAML syntax" && exit 1)
-      fi
-
-      # Validate example CI files
-      for ci_file in examples/*/.gitlab-ci.yml; do
-        if [ -f "$ci_file" ]; then
-          echo "Validating $ci_file"
-          python3 -c "import yaml; yaml.safe_load(open('$ci_file'))" || \
-            (echo "$ci_file has invalid YAML syntax" && exit 1)
-        fi
-      done
-    - echo "All GitLab CI files have valid syntax"
-  rules:
-    - when: always
-
 # Validate template structure and required fields
 lint:templates:
   stage: test
@@ -144,13 +116,3 @@ lint:documentation:
   rules:
     - when: always
 
-# Security: Validate no secrets in templates
-lint:no-secrets:
-  stage: test
-  image: zricethezav/gitleaks:v8.21.2
-  script:
-    - echo "Scanning templates for accidentally committed secrets..."
-    - gitleaks detect --redact --source . --no-git
-    - echo "No secrets found in repository"
-  rules:
-    - when: always

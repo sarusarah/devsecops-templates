@@ -71,8 +71,23 @@ jobs:
             done
           done
 
-  security-secrets:
-    name: Secret Scanning
+  # Defense in depth: Two-tier security scanning strategy
+  #
+  # Tier 1 (Fast): Gitleaks specializes in secret detection, runs on all PRs/pushes
+  #   - Catches hardcoded credentials, API keys, tokens before merge
+  #   - Fast execution (~10-30 seconds)
+  #   - Blocks pipeline if secrets found
+  #
+  # Tier 2 (Comprehensive): Trivy multi-scanner, runs only on main branch
+  #   - Scans for vulnerabilities, secrets, and misconfigurations
+  #   - Slower but more comprehensive (~1-2 minutes)
+  #   - Validates overall security posture after merge
+  #
+  # Why both? Gitleaks catches secrets early (better UX), Trivy provides defense in depth
+  # and catches things Gitleaks might miss, plus scans for other security issues.
+
+  security-secrets-gitleaks:
+    name: Security Scan - Secrets (Gitleaks)
     runs-on: ubuntu-latest
     if: github.event_name != 'release'
     steps:
@@ -83,8 +98,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  security-trivy:
-    name: Trivy Scan
+  security-comprehensive-trivy:
+    name: Security Scan - Comprehensive (Trivy)
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
@@ -100,6 +115,10 @@ jobs:
   # Test - Template validation
   # ============================================================================
 
+  # Validates that templates can be safely composed together without job name conflicts.
+  # When users include multiple templates in their CI configuration, all job definitions
+  # are merged. If two templates define jobs with the same name, it causes conflicts.
+  # This test prevents breaking changes by catching conflicts before templates are released.
   test-composition:
     name: Test Template Composition
     runs-on: ubuntu-latest
