@@ -1,0 +1,65 @@
+---
+# Pipeline Workflow Rules - Control when pipelines run
+# Workflow Configuration - Define pipeline execution rules
+#
+# Controls when GitLab CI/CD pipelines are triggered. Implements the workflow:rules
+# directive to prevent duplicate pipelines and control pipeline execution based on
+# branch, merge request, and tag events.
+#
+# Quick Start:
+#   Automatically included by base.yml
+#   No additional configuration needed
+#
+# Pipeline Trigger Rules:
+#   1. Always run on merge requests
+#   2. Always run on default branch (main/master)
+#   3. Always run on tags/releases
+#   4. Run on other branches only if RUN_ON_BRANCHES="true"
+#   5. Never run otherwise (prevents duplicate pipelines)
+#
+# Variables:
+#   RUN_ON_BRANCHES: "false"            # Enable pipelines on all branches (default: "false")
+#
+# Behavior:
+#   Default (RUN_ON_BRANCHES="false"):
+#     - Merge requests: Pipeline runs
+#     - Main/master branch: Pipeline runs
+#     - Feature branches: No pipeline
+#     - Tags: Pipeline runs
+#
+#   With RUN_ON_BRANCHES="true":
+#     - All branches: Pipeline runs
+#     - Merge requests: Pipeline runs
+#     - Tags: Pipeline runs
+#
+# Prevents Duplicate Pipelines:
+#   Without workflow rules, GitLab runs separate pipelines for:
+#   - Branch push
+#   - Merge request creation
+#   This causes duplicates. Workflow rules ensure only one pipeline runs.
+#
+# Customization:
+#   Override in your .gitlab-ci.yml:
+#   workflow:
+#     rules:
+#       - if: '$CI_COMMIT_BRANCH =~ /^release/'  # Custom rule
+#       - when: never
+#
+# See Also:
+#   - https://docs.gitlab.com/ee/ci/yaml/workflow.html
+
+workflow:
+  rules:
+    # Pipelines for merge requests always
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: always
+    # Pipelines for default branch always
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      when: always
+    # Optional: tags/releases
+    - if: '$CI_COMMIT_TAG'
+      when: always
+    # Otherwise only if explicitly enabled
+    - if: '$RUN_ON_BRANCHES == "true"'
+      when: always
+    - when: never

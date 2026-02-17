@@ -1,6 +1,61 @@
 ---
 # OWASP SPVS: Integrate Phase - Infrastructure as Code security
-# Scan Kubernetes manifests, Terraform, Dockerfiles, and other IaC for misconfigurations
+# IaC Security Scanning - Detect misconfigurations and security issues
+#
+# Scans Infrastructure as Code files (Kubernetes manifests, Terraform, Dockerfiles,
+# Helm charts, etc.) for security misconfigurations, policy violations, and best
+# practice deviations before deployment.
+#
+# Quick Start:
+#   variables:
+#     ENABLE_IAC_SCAN: "true"
+#     IAC_TARGET_DIR: "k8s"  # Directory containing IaC files
+#     SECURITY_SCANNER: "trivy"  # or "specialized"
+#
+# Scanner Options:
+#   Trivy (Default):
+#     - Unified IaC scanner
+#     - Supports multiple formats
+#     - Fast and comprehensive
+#     - Best for most projects
+#
+#   Specialized Tools:
+#     - Kubeconform: Kubernetes manifest validation
+#     - Kube-Score: Kubernetes best practices
+#     - Polaris: Kubernetes security audit
+#     - Best for Kubernetes-specific validation
+#
+# Variables:
+#   ENABLE_IAC_SCAN: "true"             # Enable IaC scanning (default: "false")
+#   SECURITY_SCANNER: "trivy"           # Scanner: "trivy" or "specialized" (default: "trivy")
+#   IAC_TARGET_DIR: "k8s"               # Directory with IaC files (default: "k8s")
+#   PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "infra")
+#   SECURITY_POLICY: "strict"           # Policy: "strict" or "permissive" (default: "strict")
+#
+# Supported IaC Formats:
+#   Trivy: Kubernetes, Terraform, CloudFormation, Dockerfile, Helm, Kustomize
+#   Specialized: Kubernetes manifests (YAML)
+#
+# Directory Structure:
+#   Common patterns:
+#     - k8s/ (Kubernetes manifests)
+#     - terraform/ (Terraform files)
+#     - helm/ (Helm charts)
+#     - infra/ (Mixed infrastructure code)
+#
+# Monorepo Support:
+#   Scan specific infrastructure directory:
+#   variables:
+#     PROJECT_PATH: "services/api"
+#     IAC_TARGET_DIR: "k8s"
+#     ENABLE_IAC_SCAN: "true"
+#   # Scans: services/api/k8s/
+#
+# See Also:
+#   - https://aquasecurity.github.io/trivy/
+#   - https://github.com/yannh/kubeconform
+#   - https://github.com/zegl/kube-score
+#   - https://www.fairwinds.com/polaris
 
 # Trivy-based IaC scanning (recommended for unified tooling)
 iac-security:
@@ -34,13 +89,10 @@ iac-security-specialized:
   image: alpine:3.20
   script:
     - apk add --no-cache bash curl
-    # kubeconform
     - curl -sSL -o /usr/local/bin/kubeconform https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64
     - chmod +x /usr/local/bin/kubeconform
-    # kubescore
     - curl -sSL -o /usr/local/bin/kubescore https://github.com/zegl/kube-score/releases/latest/download/kube-score_linux_amd64
     - chmod +x /usr/local/bin/kubescore
-    # polaris (binary)
     - curl -sSL -o /usr/local/bin/polaris https://github.com/FairwindsOps/polaris/releases/latest/download/polaris_linux_amd64
     - chmod +x /usr/local/bin/polaris
     - |
@@ -51,7 +103,6 @@ iac-security-specialized:
         exit 0
       fi
       kubeconform -summary -strict "${TARGET_DIR}" || true
-      # kubescore expects rendered manifests; teams can override with their render step
       find "${TARGET_DIR}" -name '*.yaml' -o -name '*.yml' | head -n 50 | xargs -I{} sh -c 'kubescore score "{}" || true'
       polaris audit --audit-path "${TARGET_DIR}" --format json > polaris.json || true
   rules:

@@ -1,0 +1,91 @@
+---
+# OWASP SPVS: Develop Phase - Secure coding and continuous reviews
+# Static Application Security Testing (SAST) - Source code security analysis
+#
+# Analyzes source code for security vulnerabilities, coding errors, and security anti-patterns
+# without executing the code. Detects issues like SQL injection, XSS, hardcoded secrets,
+# insecure configurations, and OWASP Top 10 vulnerabilities.
+#
+# Quick Start:
+#   variables:
+#     ENABLE_SAST: "true"
+#     SAST_TOOL: "semgrep"  # or "trivy"
+#
+# Tool Options:
+#   Semgrep (Recommended):
+#     - Comprehensive security rules
+#     - Language-specific patterns
+#     - OWASP Top 10 coverage
+#     - Best for JavaScript/TypeScript, Python, Java
+#
+#   Trivy:
+#     - Misconfiguration detection
+#     - Fast and lightweight
+#     - Good for basic checks
+#     - Better for infrastructure code
+#
+# Variables:
+#   ENABLE_SAST: "true"                 # Enable SAST scanning (default: "true")
+#   SAST_TOOL: "semgrep"                # Tool: "semgrep" or "trivy" (default: "semgrep")
+#   SECURITY_SCANNER: "specialized"     # Scanner mode (affects tool selection)
+#   PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "api")
+#   SECURITY_POLICY: "strict"           # Policy: "strict" or "permissive" (default: "strict")
+#
+# Supported Languages:
+#   Semgrep: JavaScript/TypeScript, Python, Java, Go, Ruby, PHP, C/C++, C#, Kotlin, Rust
+#   Trivy: YAML, JSON, Terraform, Dockerfile, Kubernetes
+#
+# Monorepo Support:
+#   Scan specific application:
+#   variables:
+#     PROJECT_PATH: "api"
+#     ENABLE_SAST: "true"
+#     SAST_TOOL: "semgrep"
+#
+# See Also:
+#   - https://semgrep.dev/
+#   - https://aquasecurity.github.io/trivy/
+
+# Trivy-based SAST (basic misconfiguration and security checks)
+sast:
+  stage: source
+  image: aquasec/trivy:0.58.1
+  script:
+    - trivy --version
+    - |
+      trivy fs \
+        --scanners misconfig \
+        --severity HIGH,CRITICAL \
+        --format json \
+        --output sast-report.json \
+        "${PROJECT_PATH:-.}"
+  rules:
+    - if: '$ENABLE_SAST == "true" && ($SECURITY_SCANNER == "trivy" || $SAST_TOOL == "trivy")'
+    - when: never
+  allow_failure: false
+  artifacts:
+    when: always
+    expire_in: 7 days
+    paths:
+      - sast-report.json
+    reports:
+      sast: sast-report.json
+
+# Semgrep-based SAST (comprehensive security analysis)
+sast-semgrep:
+  stage: source
+  image: returntocorp/semgrep:1.97.0
+  script:
+    - semgrep --version
+    - semgrep scan --config p/security-audit --json -o semgrep.json "${PROJECT_PATH:-.}"
+  rules:
+    - if: '$ENABLE_SAST == "true" && ($SECURITY_SCANNER == "specialized" || $SAST_TOOL == "semgrep")'
+    - when: never
+  allow_failure: false
+  artifacts:
+    when: always
+    expire_in: 7 days
+    paths:
+      - semgrep.json
+    reports:
+      sast: semgrep.json

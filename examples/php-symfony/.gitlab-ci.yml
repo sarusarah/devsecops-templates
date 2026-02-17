@@ -3,13 +3,13 @@ include:
   - project: platform/devsecops-template
     ref: v1.0.0
     file:
-      - /templates/base.yml
-      - /templates/security/secrets.yml
-      - /templates/security/dependency.yml
-      - /templates/security/sast.yml
-      - /templates/gitops/deploy-staging.yml
-      - /templates/gitops/deploy-production.yml
-      - /templates/monitor.yml
+      - /templates/gitlab/base.yml
+      - /templates/gitlab/security/secrets.yml
+      - /templates/gitlab/security/dependency.yml
+      - /templates/gitlab/security/sast.yml
+      - /templates/gitlab/deploy-staging.yml
+      - /templates/gitlab/deploy-production.yml
+      - /templates/gitlab/monitor.yml
 
 variables:
   APP_NAME: "symfony-app"

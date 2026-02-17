@@ -15,11 +15,11 @@ include:
   - project: platform/devsecops-template
     ref: v1.0.1
     file:
-      - /templates/base.yml
-      - /templates/security/secrets.yml
-      - /templates/security/dependency.yml
-      - /templates/security/sast.yml
-      - /templates/security/dtrack.yml  # Optional: SBOM upload to Dependency-Track
+      - /templates/gitlab/base.yml
+      - /templates/gitlab/security/secrets.yml
+      - /templates/gitlab/security/dependency.yml
+      - /templates/gitlab/security/sast.yml
+      - /templates/gitlab/security/dtrack.yml  # Optional: SBOM upload to Dependency-Track
 
 variables:
   LANGUAGE: "node"  # or python, php
@@ -37,7 +37,7 @@ variables:
 
 ## What's Included
 
-### Security Scanning Templates (`templates/security/`)
+### Security Scanning Templates (`templates/gitlab/security/`)
 
 **Unified Scanning (Trivy - Default)**
 - **Secrets Detection** - Trivy secret scanning
@@ -58,7 +58,7 @@ variables:
 **SBOM & Dependency Tracking**
 - **Dependency-Track Integration** - Upload CycloneDX SBOMs to Dependency-Track for centralized dependency and vulnerability tracking
 
-### Pipeline Templates (`templates/`)
+### Pipeline Templates (`templates/gitlab/` and `templates/github/`)
 - **Base Configuration** - Stages, rules, and variables
 - **Workflow Rules** - When pipelines should run
 - **Build Templates** - Node.js, Python, PHP
@@ -74,7 +74,7 @@ variables:
 - PHP Drupal application
 - **Monorepo examples** - Frontend (Node.js) + Backend (Python) with independent CI/CD (GitLab CI & GitHub Actions)
 
-### GitHub Actions Support (`templates/github/workflows/`)
+### GitHub Actions Support (`templates/github/`)
 - **Reusable workflows** for GitHub Actions
 - Build workflows (Node.js, Python, PHP)
 - Test workflows with coverage reporting
@@ -238,12 +238,12 @@ This template follows the **[OWASP Secure Pipeline Verification Standard (SPVS)]
 ```yaml
 # Base template provides stages and rules
 include:
-  - local: /templates/base.yml
+  - local: /templates/gitlab/base.yml
 
 # Extend with specific security scans
 include:
-  - local: /templates/security/secrets.yml
-  - local: /templates/security/sast.yml
+  - local: /templates/gitlab/security/secrets.yml
+  - local: /templates/gitlab/security/sast.yml
 
 # Use pre-built job templates
 build-app:
@@ -266,9 +266,9 @@ include:
   - project: platform/devsecops-template
     ref: v1.0.1
     file:
-      - /templates/base.yml
+      - /templates/gitlab/base.yml
       - /templates/build.yml
-      - /templates/security/secrets.yml
+      - /templates/gitlab/security/secrets.yml
 
 # Frontend project - only runs when frontend/ changes
 build:frontend:
@@ -429,7 +429,7 @@ The container scanning template scans Docker images for vulnerabilities using Tr
 ```yaml
 include:
   - project: platform/devsecops-template
-    file: /templates/security/container.yml
+    file: /templates/gitlab/security/container.yml
 
 variables:
   ENABLE_CONTAINER_SCAN: "true"
@@ -520,8 +520,8 @@ include:
   - project: platform/devsecops-template
     ref: v1.0.1
     file:
-      - /templates/base.yml
-      - /templates/security/dtrack.yml
+      - /templates/gitlab/base.yml
+      - /templates/gitlab/security/dtrack.yml
 
 variables:
   ENABLE_DTRACK: "true"

@@ -1,6 +1,53 @@
 ---
 # OWASP SPVS: Develop Phase - Source code security
-# Software Composition Analysis (SCA) - Scan dependencies for known vulnerabilities
+# Dependency Scanning - Software Composition Analysis (SCA)
+#
+# Scans project dependencies for known vulnerabilities (CVEs) in third-party libraries
+# and packages. Integrates with GitLab Security Dashboard for centralized vulnerability
+# management and tracking.
+#
+# Quick Start:
+#   variables:
+#     ENABLE_DEPENDENCY_SCAN: "true"
+#     LANGUAGE: "node"  # or "python", "php"
+#     SECURITY_SCANNER: "trivy"  # or "specialized"
+#
+# Scanner Options:
+#   Trivy (Default):
+#     - Unified vulnerability scanner
+#     - Fast and comprehensive
+#     - Supports all languages automatically
+#     - Recommended for most projects
+#
+#   Specialized Tools:
+#     - npm audit (Node.js)
+#     - pip-audit (Python)
+#     - composer audit (PHP)
+#     - Purpose-built for each language
+#     - More detailed language-specific insights
+#
+# Variables:
+#   ENABLE_DEPENDENCY_SCAN: "true"      # Enable dependency scanning (default: "true")
+#   SECURITY_SCANNER: "trivy"           # Scanner: "trivy" or "specialized" (default: "trivy")
+#   LANGUAGE: "node"                    # Language: "node", "python", "php" (required for specialized)
+#   PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "backend")
+#   SECURITY_POLICY: "strict"           # Policy: "strict" or "permissive" (default: "strict")
+#
+# Supported Package Managers:
+#   Node.js: npm, yarn, pnpm (package.json, package-lock.json, yarn.lock, pnpm-lock.yaml)
+#   Python: pip, poetry (requirements.txt, Pipfile, pyproject.toml)
+#   PHP: composer (composer.json, composer.lock)
+#
+# Monorepo Support:
+#   Scan specific subdirectory:
+#   variables:
+#     PROJECT_PATH: "backend"
+#     LANGUAGE: "python"
+#     ENABLE_DEPENDENCY_SCAN: "true"
+#
+# See Also:
+#   - https://aquasecurity.github.io/trivy/
+#   - https://docs.gitlab.com/ee/user/application_security/dependency_scanning/
 
 # Trivy-based dependency scanning (recommended for unified tooling)
 dependency-scanning:

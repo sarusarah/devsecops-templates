@@ -1,0 +1,167 @@
+---
+# OWASP SPVS: Base Configuration - Pipeline foundation and stage definitions
+# Base Template - Core configuration for GitLab CI/CD pipelines
+#
+# Provides standardized pipeline stages aligned with OWASP Secure Pipeline Verification
+# Standard (SPVS), default variables, and reusable rule sets. Include this as the
+# foundation for all DevSecOps pipelines.
+#
+# Quick Start:
+#   include:
+#     - project: platform/devsecops-template
+#       file: /templates/gitlab/base.yml
+#
+#   variables:
+#     LANGUAGE: "node"
+#     ENABLE_SECRETS: "true"
+#     ENABLE_DEPENDENCY_SCAN: "true"
+#
+# Pipeline Stages (OWASP SPVS Aligned):
+#   source:  Source code security (secrets, dependencies, SAST)
+#   build:   Build artifacts
+#   test:    Unit and integration tests
+#   package: Package and scan artifacts (container, IaC)
+#   stage:   Deploy to staging environment
+#   verify:  Verification testing (DAST, E2E)
+#   deploy:  Deploy to production
+#   operate: Operations and monitoring
+#   report:  Security reporting and metrics
+#
+# Variables - Language & Security:
+#   LANGUAGE: "generic"                 # Language: "node", "python", "php", "generic" (default: "generic")
+#   SECURITY_SCANNER: "trivy"           # Scanner: "trivy" (unified) or "specialized" (default: "trivy")
+#   SAST_TOOL: "semgrep"                # SAST tool: "semgrep" or "trivy" (default: "semgrep")
+#
+# Variables - Feature Toggles:
+#   ENABLE_SECRETS: "true"              # Enable secrets scanning (default: "true")
+#   ENABLE_DEPENDENCY_SCAN: "true"      # Enable dependency scanning (default: "true")
+#   ENABLE_SAST: "true"                 # Enable SAST (default: "true")
+#   ENABLE_CONTAINER_SCAN: "false"      # Enable container scanning (default: "false")
+#   ENABLE_IAC_SCAN: "false"            # Enable IaC scanning (default: "false")
+#   ENABLE_DAST: "false"                # Enable DAST (default: "false")
+#   ENABLE_E2E: "false"                 # Enable E2E tests (default: "false")
+#   ENABLE_PERF_TESTS: "false"          # Enable performance tests (default: "false")
+#   ENABLE_DTRACK: "false"              # Enable Dependency-Track SBOM upload (default: "false")
+#
+# Variables - GitOps Deployment:
+#   GITOPS_REPO: ""                     # GitOps repository URL (e.g., "git@gitlab.com:org/gitops.git")
+#   GITOPS_PATH: "values.yaml"          # Path to values file in GitOps repo
+#   GITOPS_IMAGE_TAG_YQ_PATH: ".image.tag"  # YQ path to image tag field
+#   GITOPS_COMMIT_MESSAGE: ""           # Commit message template
+#
+# Variables - Security Policy:
+#   SECURITY_POLICY: "strict"           # Policy: "strict" (fail on findings) or "permissive"
+#   TRIVY_SEVERITY: "CRITICAL,HIGH"     # Trivy severity levels to report
+#   TRIVY_EXIT_CODE: "1"                # Exit code on findings: "0" (warn) or "1" (fail)
+#
+# Variables - Validation & Testing:
+#   STAGING_URL: ""                     # Staging environment URL for DAST
+#   RUN_ON_BRANCHES: "false"            # Run on all branches or MR/main only
+#
+# Monorepo Support:
+#   PROJECT_PATH: ""                    # Subproject path (e.g., "frontend", "backend")
+#
+# Security Policy Modes:
+#   strict:     Fails pipeline on security findings (recommended for main branch)
+#   permissive: Allows failures on feature branches, strict on main/MR
+#
+# See Also:
+#   - https://owasp.org/www-project-spvs/
+#   - https://docs.gitlab.com/ee/ci/yaml/
+
+include:
+  - local: /templates/gitlab/workflow.yml
+
+# Pipeline stages aligned with OWASP Secure Pipeline Verification Standard (SPVS)
+# https://owasp.org/www-project-spvs/
+stages:
+  # OWASP SPVS: Develop Phase - Secure coding and continuous reviews
+  - source        # Source code security (secrets, dependencies, SAST)
+  - build         # Build artifacts
+  - test          # Unit and integration tests
+
+  # OWASP SPVS: Integrate Phase - Automated validation and artifact integrity
+  - package       # Package and scan artifacts (container, IaC)
+
+  # OWASP SPVS: Release Phase - Final validations and secure deployment
+  - stage         # Deploy to staging environment
+  - verify        # Verification testing (DAST, E2E, acceptance)
+  - deploy        # Deploy to production
+
+  # OWASP SPVS: Operate Phase - Continuous monitoring and incident response
+  - operate       # Operations and monitoring
+  - report        # Security reporting and metrics
+
+default:
+  interruptible: true
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+
+variables:
+  # Polyglot selector (node|python|php|java|generic)
+  LANGUAGE: "generic"
+
+  # Security tool selection (trivy|specialized)
+  # trivy: Use Trivy for all security scanning (secrets, dependencies, SAST, IaC, container)
+  # specialized: Use specialized tools (Gitleaks, language-specific scanners, Semgrep)
+  SECURITY_SCANNER: "trivy"
+
+  # SAST tool selection (only applies when SECURITY_SCANNER=specialized or for mixed approach)
+  # semgrep: Use Semgrep for comprehensive SAST
+  # trivy: Use Trivy for basic SAST/misconfiguration detection
+  SAST_TOOL: "semgrep"
+
+  # Feature toggles
+  ENABLE_SECRETS: "true"
+  ENABLE_DEPENDENCY_SCAN: "true"
+  ENABLE_SAST: "true"
+  ENABLE_CONTAINER_SCAN: "false"
+  ENABLE_IAC_SCAN: "false"
+  ENABLE_DAST: "false"
+  ENABLE_E2E: "false"
+  ENABLE_PERF_TESTS: "false"
+  ENABLE_DTRACK: "false"
+
+  # Pipeline behaviour
+  RUN_ON_BRANCHES: "false"
+
+  # GitOps
+  GITOPS_REPO: ""
+  GITOPS_PATH: "values.yaml"
+  GITOPS_IMAGE_TAG_YQ_PATH: ".image.tag"
+  GITOPS_COMMIT_MESSAGE: "Promote ${CI_COMMIT_SHORT_SHA}"
+
+  # DAST / Validation
+  STAGING_URL: ""
+
+  # Compliance/Gating policy (ISO 27001 / NIS2 / OWASP ASVS)
+  # "strict": fail in MR + default branch
+  # "permissive": allow_failure on non-default branches
+  SECURITY_POLICY: "strict"
+
+  # Trivy gating (container scan)
+  TRIVY_SEVERITY: "CRITICAL,HIGH"
+  TRIVY_EXIT_CODE: "1"
+
+# Common rule sets
+.rules_mr_or_default: &rules_mr_or_default
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+
+.rules_default_manual: &rules_default_manual
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      when: manual
+    - when: never
+
+.security_allow_failure:
+  rules:
+    - if: '$SECURITY_POLICY == "permissive" && $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE != "merge_request_event"'
+      when: on_success
+      allow_failure: true
+    - when: on_success
+      allow_failure: false

@@ -7,13 +7,13 @@ include:
   - project: platform/devsecops-template
     ref: main  # Use specific version tag in production (e.g., v1.0.1)
     file:
-      - /templates/base.yml
-      - /templates/build.yml
-      - /templates/test.yml
-      - /templates/security/secrets.yml
-      - /templates/security/sast.yml
-      - /templates/security/dependency.yml
-      - /templates/security/dtrack.yml
+      - /templates/gitlab/base.yml
+      - /templates/gitlab/build.yml
+      - /templates/gitlab/test.yml
+      - /templates/gitlab/security/secrets.yml
+      - /templates/gitlab/security/sast.yml
+      - /templates/gitlab/security/dependency.yml
+      - /templates/gitlab/security/dtrack.yml
 
 # Global variables (optional)
 variables:

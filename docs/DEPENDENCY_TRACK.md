@@ -25,8 +25,8 @@ include:
   - project: platform/devsecops-template
     ref: v1.0.1
     file:
-      - /templates/base.yml
-      - /templates/security/dtrack.yml
+      - /templates/gitlab/base.yml
+      - /templates/gitlab/security/dtrack.yml
 
 variables:
   ENABLE_DTRACK: "true"
@@ -138,8 +138,8 @@ include:
   - project: platform/devsecops-template
     ref: v1.0.1
     file:
-      - /templates/base.yml
-      - /templates/security/dtrack.yml
+      - /templates/gitlab/base.yml
+      - /templates/gitlab/security/dtrack.yml
 
 variables:
   ENABLE_DTRACK: "true"
@@ -252,8 +252,8 @@ include:
   - project: platform/devsecops-template
     ref: v1.0.1
     file:
-      - /templates/base.yml
-      - /templates/security/dtrack.yml
+      - /templates/gitlab/base.yml
+      - /templates/gitlab/security/dtrack.yml
 
 variables:
   DTRACK_URL: "https://api.dtrack.example.com"

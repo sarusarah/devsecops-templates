@@ -193,7 +193,7 @@ Add to your `.gitlab-ci.yml`:
 
 ```yaml
 include:
-  - local: /templates/base.yml
+  - local: /templates/gitlab/base.yml
 
 variables:
   LANGUAGE: "node"

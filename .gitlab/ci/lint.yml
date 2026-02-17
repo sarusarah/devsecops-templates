@@ -131,8 +131,12 @@ lint:documentation:
       markdownlint \
         --config .markdownlint.json \
         README.md \
-        QUICKSTART.md \
-        TESTING.md \
+        docs/TESTING.md \
+        docs/CHANGELOG.md \
+        docs/CONTAINER_SCANNING.md \
+        docs/CONTAINER_SCANNING_QUICKREF.md \
+        docs/DEPENDENCY_TRACK.md \
+        docs/README.md \
         dagger/README.md \
         || echo "Markdown linting warnings found (not blocking)"
     - echo "Documentation check complete"

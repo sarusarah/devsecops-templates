@@ -1,0 +1,97 @@
+---
+# OWASP SPVS: Release Phase - Dynamic security validation
+# Dynamic Application Security Testing (DAST) - Runtime vulnerability detection
+#
+# Performs black-box security testing of running applications by simulating attacks
+# against a deployed environment. Tests for vulnerabilities like SQL injection, XSS,
+# CSRF, authentication issues, and OWASP Top 10 vulnerabilities.
+#
+# Quick Start:
+#   variables:
+#     ENABLE_DAST: "true"
+#     STAGING_URL: "https://staging.example.com"
+#     SECURITY_POLICY: "strict"  # or "permissive"
+#
+# How It Works:
+#   1. Deploys application to staging environment
+#   2. Runs OWASP ZAP baseline scan against staging URL
+#   3. Analyzes running application for vulnerabilities
+#   4. Generates report with findings
+#
+# Variables:
+#   ENABLE_DAST: "true"                 # Enable DAST scanning (default: "false")
+#   STAGING_URL: ""                     # Required: URL of deployed staging environment
+#   SECURITY_POLICY: "strict"           # Policy: "strict" (fail on alerts) or "permissive" (default: "strict")
+#
+# Security Policy Modes:
+#   strict:
+#     - Fails pipeline on security alerts (exit code 1)
+#     - Allows warnings (exit code 2)
+#     - Recommended for production-bound branches
+#
+#   permissive:
+#     - Warns on findings but doesn't fail
+#     - Good for development branches
+#     - Allows gradual security improvement
+#
+# OWASP ZAP Scan Types:
+#   Baseline (Used here):
+#     - Passive scanning only
+#     - Safe for production-like environments
+#     - No intrusive attacks
+#     - Fast (minutes)
+#
+#   Full Scan (Not implemented):
+#     - Active scanning with attacks
+#     - Only for dedicated test environments
+#     - Slower (hours)
+#
+# Prerequisites:
+#   - Application must be deployed and accessible
+#   - Staging URL must return HTTP 200
+#   - Network connectivity from CI to staging
+#
+# Typical Pipeline Flow:
+#   1. build → test → deploy-staging
+#   2. Wait for staging deployment
+#   3. Run DAST scan
+#   4. If passed → deploy-production
+#
+# See Also:
+#   - https://www.zaproxy.org/
+#   - https://owasp.org/www-project-zap/
+
+dast-zap:
+  stage: verify
+  image: ghcr.io/zaproxy/zaproxy:2.15.0
+  script:
+    - |
+      if [ -z "${STAGING_URL}" ]; then
+        echo "STAGING_URL is required for DAST."
+        exit 2
+      fi
+      mkdir -p zap
+      # Run ZAP baseline scan - exit code 2 means warnings, 1 means alerts found
+      set +e
+      zap-baseline.py -t "${STAGING_URL}" -J zap/zap.json -r zap/zap.html
+      ZAP_EXIT_CODE=$?
+      set -e
+
+      # Allow warnings (exit 2) but fail on alerts (exit 1) if SECURITY_POLICY is strict
+      if [ "$SECURITY_POLICY" = "strict" ] && [ $ZAP_EXIT_CODE -eq 1 ]; then
+        echo "DAST found security alerts in strict mode"
+        exit 1
+      fi
+      exit 0
+  rules:
+    - if: '$ENABLE_DAST == "true"'
+    - when: never
+  allow_failure: false
+  artifacts:
+    when: always
+    expire_in: 7 days
+    paths:
+      - zap/zap.json
+      - zap/zap.html
+    reports:
+      dast: zap/zap.json

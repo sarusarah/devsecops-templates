@@ -1,6 +1,81 @@
 ---
 # OWASP SPVS: Operate Phase - Security reporting and metrics
-# Aggregate and report all security scan results
+# Security Reporting - Aggregate and summarize scan results
+#
+# Collects and aggregates all security scan results from the pipeline, generates a
+# comprehensive security summary, and optionally sends notifications to Mattermost
+# or other communication platforms.
+#
+# Quick Start:
+#   Automatically runs after pipeline completes
+#   Optional: Set MATTERMOST_WEBHOOK_URL for notifications
+#
+# Variables:
+#   MATTERMOST_WEBHOOK_URL: ""          # Optional: Mattermost webhook for notifications
+#   SECURITY_SCANNER: "trivy"           # Scanner type (automatically set by base.yml)
+#
+# Generated Reports:
+#   Creates summary.md with:
+#     - Pipeline metadata (project, commit, branch)
+#     - Security scanner information
+#     - Aggregated scan results
+#     - Issue counts per scan type
+#     - Overall security status
+#
+# Scanned Report Files:
+#   Secrets:
+#     - secrets-report.json (Trivy)
+#     - gitleaks-report.json (Gitleaks)
+#
+#   Dependencies:
+#     - dependency-scan.json (Trivy or language-specific)
+#
+#   SAST:
+#     - sast-report.json (Trivy)
+#     - semgrep.json (Semgrep)
+#
+#   IaC:
+#     - iac-report.json (Trivy)
+#     - polaris.json (Polaris)
+#
+#   Container:
+#     - trivy.json (Trivy)
+#
+#   DAST:
+#     - zap/zap.json (OWASP ZAP)
+#
+# Pipeline Integration:
+#   Runs in report stage (final stage)
+#   Only on default branch and merge requests
+#   Runs even if previous stages have warnings
+#
+# Notification Integration:
+#   Mattermost:
+#     1. Create incoming webhook in Mattermost
+#     2. Set MATTERMOST_WEBHOOK_URL as CI/CD variable
+#     3. Report automatically sent on pipeline completion
+#
+#   Example webhook URL:
+#     https://mattermost.example.com/hooks/xxx-xxx-xxx
+#
+# Artifacts:
+#   summary.md:
+#     - Markdown formatted report
+#     - Expires after 30 days
+#     - Downloadable from pipeline artifacts
+#     - Viewable in GitLab UI
+#
+# Custom Reporting:
+#   Extend for additional platforms:
+#   reporting:
+#     script:
+#       - ./generate-report.sh
+#       - ./send-to-slack.sh
+#       - ./send-to-email.sh
+#
+# See Also:
+#   - https://docs.mattermost.com/developer/webhooks-incoming.html
+#   - https://docs.gitlab.com/ee/ci/yaml/artifacts_reports.html
 
 reporting:
   stage: report
@@ -46,9 +121,9 @@ reporting:
       # Add summary
       echo "---" >> summary.md
       if [ $CRITICAL_ISSUES -gt 0 ]; then
-        echo "⚠️  **Status**: $CRITICAL_ISSUES security scan(s) found issues" >> summary.md
+        echo "Status: $CRITICAL_ISSUES security scan(s) found issues" >> summary.md
       else
-        echo "✅ **Status**: No critical security issues detected" >> summary.md
+        echo "Status: No critical security issues detected" >> summary.md
       fi
 
       # Optional Mattermost webhook

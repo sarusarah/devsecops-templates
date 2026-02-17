@@ -1,16 +1,51 @@
 ---
 # OWASP SPVS: Integrate Phase - Artifact integrity and security validation
-# Scan container images for vulnerabilities, misconfigurations, and security issues
+# Container Security Scanning - Vulnerability detection in Docker/OCI images
 #
-# Documentation: See CONTAINER_SCANNING.md for detailed configuration guide
+# Scans Docker and OCI container images for vulnerabilities in OS packages, application
+# dependencies, and misconfigurations. Uses remote scanning to work without Docker daemon,
+# ideal for GitLab CI environments.
 #
 # Quick Start:
 #   variables:
 #     ENABLE_CONTAINER_SCAN: "true"
 #     IMAGE_TAG: "latest"  # Must match your build tag
 #
-# For multi-environment setups (staging/prod images):
-#   See CONTAINER_SCANNING.md "Multi-Environment Images" section
+# Multi-Environment Images:
+#   For projects with staging/prod images (e.g., myapp/staging:latest, myapp/prod:latest):
+#   variables:
+#     CONTAINER_IMAGE_SUFFIX: "staging"  # Scans IMAGE_NAME/staging:TAG
+#
+# Variables:
+#   ENABLE_CONTAINER_SCAN: "true"       # Enable container scanning (default: "false")
+#   IMAGE_NAME: ""                      # Image repository (default: CI_REGISTRY_IMAGE)
+#   IMAGE_TAG: ""                       # Image tag to scan (default: CI_COMMIT_SHORT_SHA)
+#   CONTAINER_IMAGE_SUFFIX: ""          # Optional: Sub-image path (e.g., "staging")
+#   TRIVY_SEVERITY: ""                  # Severities to report (default: "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL")
+#   TRIVY_EXIT_CODE: "0"                # Exit code on vulnerabilities: "0" (warn) or "1" (fail)
+#   TRIVY_NON_SSL: "false"              # Allow insecure registries (default: "false")
+#
+# Image Reference Construction:
+#   Final image: ${IMAGE_NAME}/${CONTAINER_IMAGE_SUFFIX}:${IMAGE_TAG}
+#   Examples:
+#     - registry/project:abc123 (default)
+#     - registry/project/staging:latest (with CONTAINER_IMAGE_SUFFIX="staging")
+#     - docker.io/org/app:v1.0.0 (external registry)
+#
+# Registry Authentication:
+#   GitLab CI: Automatic via CI_REGISTRY_USER and CI_JOB_TOKEN
+#   External: Set CI_REGISTRY_USER and CI_REGISTRY_PASSWORD variables
+#
+# Monorepo Support:
+#   Each component can have its own container scan job:
+#   container-security-scan:frontend:
+#     extends: container-security-scan
+#     variables:
+#       CONTAINER_IMAGE_SUFFIX: "frontend"
+#
+# See Also:
+#   - Complete guide: docs/CONTAINER_SCANNING.md
+#   - https://aquasecurity.github.io/trivy/
 
 container-security-scan:
   stage: package

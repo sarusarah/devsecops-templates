@@ -21,7 +21,7 @@ include:
   - project: platform/devsecops-template
     ref: main
     file:
-      - /templates/security/container.yml
+      - /templates/gitlab/security/container.yml
 
 variables:
   ENABLE_CONTAINER_SCAN: "true"
@@ -63,7 +63,7 @@ Your build pushes to `${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}`:
 ```yaml
 include:
   - project: platform/devsecops-template
-    file: /templates/security/container.yml
+    file: /templates/gitlab/security/container.yml
 
 stages:
   - build
