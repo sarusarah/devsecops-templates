@@ -461,12 +461,12 @@ BOM_B64=$(base64 -w 0 < bom.json)
 	}
 
 	uploadScript += `
-HTTP_CODE=$(curl -w "%{http_code}" -o response.json \
+HTTP_CODE=$(printf '%s' "$PAYLOAD" | curl -w "%{http_code}" -o response.json \
   --retry 1 --retry-delay 5 --max-time 60 \
   -X PUT "` + dtrackUrl + `/api/v1/bom" \
   -H "Content-Type: application/json" \
   -H "X-Api-Key: ${DTRACK_API_KEY}" \
-  -d "$PAYLOAD")
+  --data-binary @-)
 
 echo "HTTP Status: ${HTTP_CODE}"
 if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
