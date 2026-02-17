@@ -455,9 +455,9 @@ BOM_B64=$(base64 -w 0 < bom.json)
 `
 
 	if projectUuid != "" {
-		uploadScript += `PAYLOAD=$(jq -n --arg project "` + projectUuid + `" --arg bom "$BOM_B64" '{project: $project, bom: $bom}')`
+		uploadScript += `PAYLOAD=$(printf '%s' "$BOM_B64" | jq -R -s --arg project "` + projectUuid + `" '{project: $project, bom: .}')`
 	} else {
-		uploadScript += `PAYLOAD=$(jq -n --arg name "` + finalProjectName + `" --arg version "` + projectVersion + `" --arg bom "$BOM_B64" '{projectName: $name, projectVersion: $version, bom: $bom}')`
+		uploadScript += `PAYLOAD=$(printf '%s' "$BOM_B64" | jq -R -s --arg name "` + finalProjectName + `" --arg version "` + projectVersion + `" '{projectName: $name, projectVersion: $version, bom: .}')`
 	}
 
 	uploadScript += `

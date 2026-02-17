@@ -82,10 +82,10 @@ dtrack-upload:
       if [ -n "$DTRACK_PROJECT_UUID" ]; then
         # Option 1: Use explicit project UUID
         echo "Using explicit project UUID"
-        PAYLOAD=$(jq -n \
+        # Use stdin to avoid "Argument list too long" for large SBOMs
+        PAYLOAD=$(printf '%s' "$BOM_B64" | jq -R -s \
           --arg project "$DTRACK_PROJECT_UUID" \
-          --arg bom "$BOM_B64" \
-          '{project: $project, bom: $bom}')
+          '{project: $project, bom: .}')
       else
         # Option 2: Auto-create with project name and version
         # Construct project name (monorepo support)
@@ -105,11 +105,11 @@ dtrack-upload:
         echo "Project Name: ${PROJECT_NAME}"
         echo "Project Version: ${PROJECT_VERSION}"
 
-        PAYLOAD=$(jq -n \
+        # Use stdin to avoid "Argument list too long" for large SBOMs
+        PAYLOAD=$(printf '%s' "$BOM_B64" | jq -R -s \
           --arg name "$PROJECT_NAME" \
           --arg version "$PROJECT_VERSION" \
-          --arg bom "$BOM_B64" \
-          '{projectName: $name, projectVersion: $version, bom: $bom}')
+          '{projectName: $name, projectVersion: $version, bom: .}')
       fi
 
       echo "================================================"
