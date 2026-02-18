@@ -8,8 +8,8 @@
 # Quick Start:
 #   variables:
 #     ENABLE_DTRACK: "true"
-#     DTRACK_URL: "https://api.dtrack.example.com"
-#     DTRACK_API_KEY: "${DTRACK_API_KEY}"  # Set as CI/CD secret
+#     # DTRACK_URL defaults to https://api.dtrack.cnc-demo.liip.cloud
+#     # DTRACK_API_KEY: Set as CI/CD secret (do not define in variables)
 #
 # Project Identification:
 #   Option 1 - Use existing project UUID:
@@ -22,8 +22,8 @@
 #
 # Variables:
 #   ENABLE_DTRACK: "true"               # Enable DTrack upload (default: false)
-#   DTRACK_URL: ""                      # Required: DTrack base URL
-#   DTRACK_API_KEY: ""                  # Required: DTrack API key (use CI/CD secret)
+#   DTRACK_URL: ""                      # DTrack base URL (default: https://api.dtrack.cnc-demo.liip.cloud)
+#   DTRACK_API_KEY: ""                  # Required: DTrack API key (set as CI/CD secret, do not define in variables)
 #   DTRACK_PROJECT_UUID: ""             # Optional: Explicit project UUID (takes precedence)
 #   DTRACK_PROJECT_NAME: ""             # Optional: Override auto-generated project name
 #   DTRACK_PROJECT_VERSION: ""          # Optional: Override version (default: CI_COMMIT_TAG or CI_COMMIT_SHORT_SHA)
@@ -32,6 +32,9 @@
 dtrack-upload:
   stage: source
   image: aquasec/trivy:0.58.1
+  variables:
+    # Default Dependency-Track instance URL (can be overridden per project)
+    DTRACK_URL: "https://api.dtrack.cnc-demo.liip.cloud"
   before_script:
     - |
       # Install dependencies for base64 encoding and API calls
@@ -40,12 +43,6 @@ dtrack-upload:
     - trivy --version
     - |
       set -e
-
-      # Validate required variables
-      if [ -z "$DTRACK_URL" ]; then
-        echo "ERROR: DTRACK_URL is required but not set"
-        exit 1
-      fi
 
       if [ -z "$DTRACK_API_KEY" ]; then
         echo "ERROR: DTRACK_API_KEY is required but not set"
