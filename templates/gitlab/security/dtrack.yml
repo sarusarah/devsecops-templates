@@ -72,26 +72,41 @@ dtrack-upload:
       SBOM_SIZE=$(stat -c%s bom.json)
       echo "SBOM generated successfully (${SBOM_SIZE} bytes)"
 
-      # Base64 encode the SBOM
-      BOM_B64=$(base64 -w 0 < bom.json)
+      echo "================================================"
+      echo "Uploading SBOM to Dependency-Track"
+      echo "DTrack URL: ${DTRACK_URL}"
+      echo "================================================"
 
-      # Construct project identification
+      RESPONSE_FILE="dtrack-response.json"
+
       if [ -n "$DTRACK_PROJECT_UUID" ]; then
-        # Option 1: Use explicit project UUID
-        echo "Using explicit project UUID"
-        # Use stdin to avoid "Argument list too long" for large SBOMs
-        PAYLOAD=$(printf '%s' "$BOM_B64" | jq -R -s \
+        # Option 1: Use explicit project UUID (PUT with JSON)
+        echo "Using explicit project UUID: ${DTRACK_PROJECT_UUID}"
+
+        # Base64 encode the SBOM
+        BOM_B64=$(base64 -w 0 < bom.json)
+
+        # Construct JSON payload and upload via stdin
+        HTTP_CODE=$(printf '%s' "$BOM_B64" | jq -R -s \
           --arg project "$DTRACK_PROJECT_UUID" \
-          '{project: $project, bom: .}')
+          '{project: $project, bom: .}' | \
+          curl -w "%{http_code}" -o "$RESPONSE_FILE" \
+          --retry 1 \
+          --retry-delay 5 \
+          --max-time 60 \
+          -X PUT "${DTRACK_URL}/api/v1/bom" \
+          -H "Content-Type: application/json" \
+          -H "X-Api-Key: ${DTRACK_API_KEY}" \
+          --data-binary @-)
       else
-        # Option 2: Auto-create with project name and version
+        # Option 2: Auto-create with project name and version (POST with multipart/form-data)
         # Construct project name (monorepo support)
         if [ -n "$DTRACK_PROJECT_NAME" ]; then
           PROJECT_NAME="$DTRACK_PROJECT_NAME"
         else
-          PROJECT_NAME="${CI_PROJECT_PATH}"
+          PROJECT_NAME="${CI_PROJECT_NAME}"
           if [ -n "$PROJECT_PATH" ]; then
-            PROJECT_NAME="${CI_PROJECT_PATH}/${PROJECT_PATH}"
+            PROJECT_NAME="${CI_PROJECT_NAME}/${PROJECT_PATH}"
           fi
         fi
 
@@ -102,29 +117,18 @@ dtrack-upload:
         echo "Project Name: ${PROJECT_NAME}"
         echo "Project Version: ${PROJECT_VERSION}"
 
-        # Use stdin to avoid "Argument list too long" for large SBOMs
-        PAYLOAD=$(printf '%s' "$BOM_B64" | jq -R -s \
-          --arg name "$PROJECT_NAME" \
-          --arg version "$PROJECT_VERSION" \
-          '{projectName: $name, projectVersion: $version, bom: .}')
+        # Upload using POST with multipart/form-data (supports autoCreate)
+        HTTP_CODE=$(curl -w "%{http_code}" -o "$RESPONSE_FILE" \
+          --retry 1 \
+          --retry-delay 5 \
+          --max-time 60 \
+          -X POST "${DTRACK_URL}/api/v1/bom" \
+          -H "X-Api-Key: ${DTRACK_API_KEY}" \
+          -F "autoCreate=true" \
+          -F "projectName=${PROJECT_NAME}" \
+          -F "projectVersion=${PROJECT_VERSION}" \
+          -F "bom=@bom.json")
       fi
-
-      echo "================================================"
-      echo "Uploading SBOM to Dependency-Track"
-      echo "DTrack URL: ${DTRACK_URL}"
-      echo "================================================"
-
-      # Upload to Dependency-Track with retry
-      # Use stdin to avoid "Argument list too long" for large payloads
-      RESPONSE_FILE="dtrack-response.json"
-      HTTP_CODE=$(printf '%s' "$PAYLOAD" | curl -w "%{http_code}" -o "$RESPONSE_FILE" \
-        --retry 1 \
-        --retry-delay 5 \
-        --max-time 60 \
-        -X PUT "${DTRACK_URL}/api/v1/bom" \
-        -H "Content-Type: application/json" \
-        -H "X-Api-Key: ${DTRACK_API_KEY}" \
-        --data-binary @-)
 
       echo "HTTP Status Code: ${HTTP_CODE}"
 
