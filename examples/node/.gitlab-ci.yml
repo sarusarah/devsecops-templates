@@ -11,6 +11,7 @@ include:
       - /templates/gitlab/deploy-staging.yml
       - /templates/gitlab/deploy-production.yml
       - /templates/gitlab/monitor.yml
+      - /templates/gitlab/ai-report.yml           # Optional: AI pipeline analysis + Slack
 
 variables:
   APP_NAME: "nuxt-app"
@@ -30,6 +31,11 @@ variables:
   ENABLE_DTRACK: "false"  # Set to "true" and configure DTRACK_URL + DTRACK_API_KEY to enable
   # DTRACK_URL: "https://api.dtrack.example.com"
   # DTRACK_API_KEY: "${DTRACK_API_KEY}"  # Set as CI/CD secret variable
+
+  # AI-powered pipeline analysis + Slack notifications (optional)
+  ENABLE_AI_REPORT: "false"  # Set to "true" and configure GEMINI_API_KEY + SLACK_WEBHOOK_URL
+  # GEMINI_API_KEY: set as CI/CD secret (from Google AI Studio)
+  # SLACK_WEBHOOK_URL: set as CI/CD secret (Slack incoming webhook)
 
 # Team-spezifische Implementierung via extends, ohne Template zu kopieren
 build-application:

@@ -17,15 +17,17 @@
 #     ENABLE_DEPENDENCY_SCAN: "true"
 #
 # Pipeline Stages (OWASP SPVS Aligned):
-#   source:  Source code security (secrets, dependencies, SAST)
-#   build:   Build artifacts
-#   test:    Unit and integration tests
-#   package: Package and scan artifacts (container, IaC)
-#   stage:   Deploy to staging environment
-#   verify:  Verification testing (DAST, E2E)
-#   deploy:  Deploy to production
-#   operate: Operations and monitoring
-#   report:  Security reporting and metrics
+#   source:       Source code security (secrets, dependencies, SAST)
+#   build:        Build artifacts
+#   test:         Unit and integration tests
+#   package:      Package and scan artifacts (container, IaC)
+#   stage:        Deploy to staging environment
+#   verify:       Verification testing (DAST, E2E)
+#   deploy:       Deploy to production
+#   operate:      Operations and monitoring
+#   report:       Security reporting and metrics
+#   ai-analysis:  AI-powered per-stage analysis (Gemini)
+#   ai-summary:   Consolidated AI summary + Slack notification
 #
 # Variables - Language & Security:
 #   LANGUAGE: "generic"                 # Language: "node", "python", "php", "generic" (default: "generic")
@@ -42,6 +44,7 @@
 #   ENABLE_E2E: "false"                 # Enable E2E tests (default: "false")
 #   ENABLE_PERF_TESTS: "false"          # Enable performance tests (default: "false")
 #   ENABLE_DTRACK: "false"              # Enable Dependency-Track SBOM upload (default: "false")
+#   ENABLE_AI_REPORT: "false"           # Enable AI-powered pipeline analysis + Slack summary (default: "false")
 #
 # Variables - GitOps Deployment:
 #   GITOPS_REPO: ""                     # GitOps repository URL (e.g., "git@gitlab.com:org/gitops.git")
@@ -92,6 +95,10 @@ stages:
   - operate       # Operations and monitoring
   - report        # Security reporting and metrics
 
+  # AI-powered pipeline analysis and Slack reporting
+  - ai-analysis   # Per-stage AI analysis (Gemini)
+  - ai-summary    # Consolidated summary + Slack notification
+
 default:
   interruptible: true
   retry:
@@ -124,6 +131,7 @@ variables:
   ENABLE_E2E: "false"
   ENABLE_PERF_TESTS: "false"
   ENABLE_DTRACK: "false"
+  ENABLE_AI_REPORT: "false"
 
   # Pipeline behaviour
   RUN_ON_BRANCHES: "false"

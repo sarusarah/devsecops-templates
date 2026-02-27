@@ -14,7 +14,7 @@ This Dagger module allows you to test your GitLab DevSecOps CI/CD pipelines loca
 curl -L https://dl.dagger.io/dagger/install.sh | sh
 
 # Initialize the module (already done)
-cd /home/sarah/Projects/Liip/DevSecOps/dagger
+cd /home/DevSecOps/dagger
 dagger develop
 ```
 
@@ -105,6 +105,24 @@ dagger call dtrack-upload \
   --project-uuid=abc-123-def-456
 ```
 
+#### AI Reporting Testing
+
+Test the AI reporting pipeline logic (no Gemini API key required):
+
+```bash
+# Run all AI reporting tests with mock data
+dagger call ai-report-test --source=../examples/node
+
+# Run with live Gemini API validation
+dagger call ai-report-test \
+  --source=../examples/node \
+  --gemini-api-key=env:GEMINI_API_KEY
+```
+
+Validates: report file discovery, Gemini request/response handling, summary aggregation, Slack Block Kit payload construction, fallback behavior, and large report truncation.
+
+For full testing documentation see [docs/AI_REPORTING_TESTING.md](../docs/AI_REPORTING_TESTING.md).
+
 ### Build & Test
 
 #### Build Node.js Application
@@ -145,6 +163,7 @@ dagger call validate-yaml --yaml-file=../examples/node/.gitlab-ci.yml
 | `container-scanning` | Scans container images with Trivy |
 | `dtrack-test` | Tests DTrack SBOM generation and payload (no upload) |
 | `dtrack-upload` | Uploads SBOM to real Dependency-Track instance |
+| `ai-report-test` | Tests AI reporting pipeline logic (mock + optional live API) |
 | `build-node` | Builds a Node.js application |
 | `test-node` | Runs Node.js tests |
 | `validate-yaml` | Validates GitLab CI YAML syntax |

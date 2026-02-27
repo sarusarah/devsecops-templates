@@ -58,6 +58,13 @@ variables:
 **SBOM & Dependency Tracking**
 - **Dependency-Track Integration** - Upload CycloneDX SBOMs to Dependency-Track for centralized dependency and vulnerability tracking
 
+### AI-Powered Pipeline Reporting (`templates/gitlab/ai-report.yml`, `templates/github/ai-report.yml`)
+- **AI Analysis** - Gemini-powered analysis of all pipeline stage outputs
+- **Slack Notifications** - Consolidated, color-coded summary sent to Slack channels
+- **Replaces Raw Logs** - Actionable summaries instead of 2000-line log dumps
+
+**📖 Full Documentation:** [docs/AI_REPORTING.md](docs/AI_REPORTING.md)
+
 ### Pipeline Templates (`templates/gitlab/` and `templates/github/`)
 - **Base Configuration** - Stages, rules, and variables
 - **Workflow Rules** - When pipelines should run
@@ -217,6 +224,13 @@ This template follows the **[OWASP Secure Pipeline Verification Standard (SPVS)]
 │ 8. operate  → Health checks and monitoring                             │
 │ 9. report   → Aggregate security findings and metrics                  │
 └─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ AI-Powered Reporting (Optional - ENABLE_AI_REPORT: "true")             │
+├─────────────────────────────────────────────────────────────────────────┤
+│ 10. ai-analysis → Gemini analyzes each stage's output                  │
+│ 11. ai-summary  → Consolidated summary → Slack notification            │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 #### Stage Mapping & Security Activities
@@ -232,6 +246,8 @@ This template follows the **[OWASP Secure Pipeline Verification Standard (SPVS)]
 | `deploy` | **Release** | Production deployment via GitOps |
 | `operate` | **Operate** | Health monitoring, availability checks |
 | `report` | **Operate** | Security metrics, compliance reporting |
+| `ai-analysis` | **Reporting** | AI-powered per-stage analysis (Gemini) |
+| `ai-summary` | **Reporting** | Consolidated summary + Slack notification |
 
 ### Template Inheritance
 
@@ -405,6 +421,7 @@ ENABLE_CONTAINER_SCAN: "false"
 ENABLE_IAC_SCAN: "false"
 ENABLE_DAST: "false"
 ENABLE_DTRACK: "false"  # Dependency-Track SBOM upload
+ENABLE_AI_REPORT: "false"  # AI pipeline analysis + Slack summary
 
 # Security policy
 SECURITY_POLICY: "strict"  # strict|permissive
@@ -567,6 +584,49 @@ STAGING_URL: "https://staging.example.com"
 PRODUCTION_URL: "https://production.example.com"
 HEALTHCHECK_URL: "${STAGING_URL}/health"
 ```
+
+### AI-Powered Pipeline Reporting
+
+Automated pipeline analysis using Google Gemini with Slack notifications. Analyzes all non-deployment stage outputs and sends a single, actionable summary to Slack.
+
+**📖 Full Documentation:** [docs/AI_REPORTING.md](docs/AI_REPORTING.md)
+
+#### Quick Start (GitLab CI)
+
+```yaml
+include:
+  - project: platform/devsecops-template
+    file:
+      - /templates/gitlab/base.yml
+      - /templates/gitlab/ai-report.yml
+
+variables:
+  ENABLE_AI_REPORT: "true"
+  # Set GEMINI_API_KEY as CI/CD secret
+  # Set SLACK_WEBHOOK_URL as CI/CD secret (optional)
+```
+
+#### Quick Start (GitHub Actions)
+
+```yaml
+jobs:
+  ai-report:
+    needs: [build, test, sast, dependency-scan]
+    if: always()
+    uses: ./.github/workflows/ai-report.yml
+    secrets:
+      gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+      slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+```
+
+#### Key Variables
+
+| Variable / Secret | Description |
+|-------------------|-------------|
+| `ENABLE_AI_REPORT` | Feature toggle (default: `"false"`) |
+| `GEMINI_API_KEY` | Google AI Studio API key (CI/CD secret) |
+| `SLACK_WEBHOOK_URL` | Slack incoming webhook URL (CI/CD secret, optional) |
+| `GEMINI_MODEL` | Model override (default: `"gemini-2.0-flash"`) |
 
 ### Notifications
 ```yaml

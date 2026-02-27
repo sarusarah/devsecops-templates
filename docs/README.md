@@ -31,6 +31,24 @@ Use this when:
 - Troubleshooting authentication or upload issues
 - Looking for examples and best practices
 
+## AI-Powered Pipeline Reporting
+
+**[AI_REPORTING.md](AI_REPORTING.md)** - Complete guide for AI-based pipeline analysis with Slack notifications
+
+Use this when:
+- Setting up AI-powered pipeline reporting
+- Configuring Gemini API and Slack webhooks
+- Understanding what gets analyzed and how
+- Planning upgrade to Vertex AI for Swiss data residency
+
+**[AI_REPORTING_TESTING.md](AI_REPORTING_TESTING.md)** - Testing guide for the AI reporting feature
+
+Use this when:
+- Testing AI reporting locally with Dagger
+- Validating Gemini API connectivity
+- Testing Slack webhook integration
+- Running the full test suite before deployment
+
 ## Testing & Development
 
 **[TESTING.md](TESTING.md)** - Complete guide for local testing
@@ -70,6 +88,7 @@ templates/
 │   ├── workflow.yml
 │   ├── monitor.yml
 │   ├── report.yml
+│   ├── ai-report.yml
 │   ├── deploy-staging.yml
 │   ├── deploy-production.yml
 │   └── security/        # Security scanning templates
@@ -81,6 +100,7 @@ templates/
 │       ├── iac.yml
 │       └── dtrack.yml
 └── github/              # GitHub Actions reusable workflows
+    ├── ai-report.yml
     ├── build-node.yml
     ├── build-php.yml
     ├── build-python.yml

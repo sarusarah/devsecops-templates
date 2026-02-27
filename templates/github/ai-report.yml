@@ -1,0 +1,462 @@
+---
+name: AI Pipeline Analysis & Slack Summary
+
+# AI-Powered Pipeline Analysis and Slack Reporting for GitHub Actions
+# Analyzes CI/CD pipeline outputs using Google Gemini and sends a consolidated
+# summary to Slack.
+#
+# Usage:
+#   jobs:
+#     ai-report:
+#       needs: [build, test, sast, dependency-scan]  # list all jobs to analyze
+#       if: always()
+#       uses: ./.github/workflows/ai-report.yml  # or your template path
+#       secrets:
+#         gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+#         slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+#
+# See Also:
+#   - docs/AI_REPORTING.md
+
+on:
+  workflow_call:
+    inputs:
+      gemini_model:
+        description: 'Gemini model to use for analysis'
+        required: false
+        type: string
+        default: 'gemini-2.0-flash'
+    secrets:
+      gemini_api_key:
+        description: 'Google AI Studio API key'
+        required: true
+      slack_webhook_url:
+        description: 'Slack incoming webhook URL'
+        required: false
+
+jobs:
+  ai-analysis:
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+        continue-on-error: true
+
+      - name: Analyze pipeline reports with Gemini
+        env:
+          GEMINI_API_KEY: ${{ secrets.gemini_api_key }}
+          GEMINI_MODEL: ${{ inputs.gemini_model }}
+          GEMINI_API_URL: "https://generativelanguage.googleapis.com/v1beta"
+        run: |
+          mkdir -p ai-reports
+
+          if [ -z "${GEMINI_API_KEY}" ]; then
+            echo "WARNING: GEMINI_API_KEY is not set. Skipping AI analysis."
+            echo '{"skipped": true, "reason": "GEMINI_API_KEY not set"}' > ai-reports/status.json
+            exit 0
+          fi
+
+          # Helper: call Gemini API with retry
+          call_gemini() {
+            local prompt_file="$1"
+            local output_file="$2"
+            local attempt=0
+            local max_retries=2
+
+            while [ $attempt -le $max_retries ]; do
+              HTTP_CODE=$(curl -s -w "%{http_code}" -o "$output_file.raw" \
+                "${GEMINI_API_URL}/models/${GEMINI_MODEL}:generateContent" \
+                -H "x-goog-api-key: ${GEMINI_API_KEY}" \
+                -H "Content-Type: application/json" \
+                -d @"$prompt_file" \
+                --max-time 120)
+
+              if [ "$HTTP_CODE" = "200" ]; then
+                jq -r '.candidates[0].content.parts[0].text // "No response generated"' \
+                  "$output_file.raw" > "$output_file" 2>/dev/null
+                rm -f "$output_file.raw"
+                return 0
+              fi
+
+              attempt=$((attempt + 1))
+              if [ $attempt -le $max_retries ]; then
+                echo "Gemini API returned HTTP $HTTP_CODE, retrying ($attempt/$max_retries)..."
+                sleep $((attempt * 5))
+              fi
+            done
+
+            echo "ERROR: Gemini API failed after $max_retries retries (HTTP $HTTP_CODE)"
+            cat "$output_file.raw" 2>/dev/null || true
+            rm -f "$output_file.raw"
+            echo "AI analysis unavailable (Gemini API error $HTTP_CODE)" > "$output_file"
+            return 1
+          }
+
+          echo "=== AI Pipeline Analysis ==="
+          echo "Model: ${GEMINI_MODEL}"
+          echo ""
+
+          # Find all report files in downloaded artifacts
+          # GitHub Actions download-artifact puts each artifact in a subdirectory
+          REPORT_PATTERNS="
+            secrets-report:Secrets Detection
+            gitleaks-report:Secrets Detection (Gitleaks)
+            dependency-scan:Dependency Vulnerability Scan
+            sast-report:Static Application Security Testing
+            semgrep:Static Application Security Testing (Semgrep)
+            iac-report:Infrastructure as Code Security
+            polaris:Infrastructure as Code Security (Polaris)
+            trivy:Container Image Security Scan
+            zap:Dynamic Application Security Testing (OWASP ZAP)
+          "
+
+          # Search artifacts directory for report files
+          find artifacts/ -type f \( -name "*.json" -o -name "*.sarif" \) 2>/dev/null | while read -r file; do
+            BASENAME=$(basename "$file" | sed 's/\.\(json\|sarif\)$//')
+
+            # Determine category from filename
+            CATEGORY="Pipeline Report"
+            echo "$REPORT_PATTERNS" | while IFS=: read -r pattern cat_name; do
+              [ -z "$pattern" ] && continue
+              pattern=$(echo "$pattern" | xargs)
+              cat_name=$(echo "$cat_name" | xargs)
+              if echo "$BASENAME" | grep -qi "$pattern"; then
+                CATEGORY="$cat_name"
+                break
+              fi
+            done
+
+            echo "Analyzing: $CATEGORY ($file)..."
+
+            REPORT_CONTENT=$(head -c 500000 "$file")
+            TRUNCATED=""
+            FILE_SIZE=$(wc -c < "$file")
+            if [ "$FILE_SIZE" -gt 500000 ]; then
+              TRUNCATED=" (truncated from ${FILE_SIZE} bytes to 500KB)"
+            fi
+
+            PROMPT="You are a CI/CD security analyst. Analyze the following ${CATEGORY} report output and provide a concise summary.
+
+          Format your response exactly as:
+          STATUS: PASS | WARN | FAIL
+          SEVERITY: CRITICAL | HIGH | MEDIUM | LOW | NONE
+          FINDINGS: <number of issues found>
+          SUMMARY: <one-line summary>
+          DETAILS:
+          - <key finding 1>
+          - <key finding 2>
+          - <up to 5 key findings>
+          ACTIONS:
+          - <recommended action 1, if any>
+          - <recommended action 2, if any>
+
+          Report type: ${CATEGORY}${TRUNCATED}
+          Report content:
+          ${REPORT_CONTENT}"
+
+            SAFE_NAME=$(echo "$BASENAME" | sed 's|[^a-zA-Z0-9_-]|-|g')
+            jq -n --arg prompt "$PROMPT" \
+              '{"contents": [{"parts": [{"text": $prompt}]}]}' > "/tmp/request-${SAFE_NAME}.json"
+
+            if call_gemini "/tmp/request-${SAFE_NAME}.json" "ai-reports/${SAFE_NAME}.txt"; then
+              echo "  Done."
+            else
+              echo "  Failed."
+            fi
+
+            rm -f "/tmp/request-${SAFE_NAME}.json"
+          done
+
+          # Write metadata
+          REPORT_COUNT=$(ls ai-reports/*.txt 2>/dev/null | wc -l)
+          jq -n \
+            --arg model "$GEMINI_MODEL" \
+            --arg date "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg repo "$GITHUB_REPOSITORY" \
+            --arg branch "$GITHUB_REF_NAME" \
+            --arg sha "$GITHUB_SHA" \
+            --arg run_url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --argjson count "$REPORT_COUNT" \
+            '{
+              "model": $model,
+              "date": $date,
+              "repository": $repo,
+              "branch": $branch,
+              "commit": $sha,
+              "run_url": $run_url,
+              "reports_analyzed": $count,
+              "skipped": false
+            }' > ai-reports/status.json
+
+          echo ""
+          echo "=== Analysis complete: ${REPORT_COUNT} reports analyzed ==="
+
+      - name: Generate consolidated summary
+        env:
+          GEMINI_API_KEY: ${{ secrets.gemini_api_key }}
+          GEMINI_MODEL: ${{ inputs.gemini_model }}
+          GEMINI_API_URL: "https://generativelanguage.googleapis.com/v1beta"
+        run: |
+          PROJECT="${GITHUB_REPOSITORY}"
+          BRANCH="${GITHUB_REF_NAME}"
+          COMMIT="${GITHUB_SHA:0:7}"
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          SKIP_AI=false
+          if [ -z "${GEMINI_API_KEY}" ]; then
+            SKIP_AI=true
+          fi
+
+          # Collect all individual analyses
+          COMBINED_ANALYSES=""
+          if ls ai-reports/*.txt 1>/dev/null 2>&1; then
+            for report in ai-reports/*.txt; do
+              REPORT_NAME=$(basename "$report" .txt | sed 's|-| |g')
+              CONTENT=$(cat "$report")
+              COMBINED_ANALYSES="${COMBINED_ANALYSES}
+          === ${REPORT_NAME} ===
+          ${CONTENT}
+
+          "
+            done
+          fi
+
+          SUMMARY=""
+          if [ "$SKIP_AI" = "false" ] && [ -n "$COMBINED_ANALYSES" ]; then
+            echo "Generating consolidated AI summary..."
+
+            PROMPT="You are a DevSecOps reporting assistant. Create a consolidated CI/CD pipeline summary from the individual stage analyses below.
+
+          Pipeline context:
+          - Repository: ${PROJECT}
+          - Branch: ${BRANCH}
+          - Commit: ${COMMIT}
+          - Date: ${DATE}
+
+          Format your response as a structured report with these sections:
+          OVERALL_STATUS: PASS | WARN | FAIL
+          VERDICT: <one-line summary of pipeline health>
+          CRITICAL:
+          - <issues requiring immediate attention, or \"None\">
+          WARNINGS:
+          - <issues worth reviewing, or \"None\">
+          PASSED:
+          - <what passed cleanly>
+          RECOMMENDATION: <one-line next step for the developer>
+
+          Individual stage analyses:
+          ${COMBINED_ANALYSES}"
+
+            jq -n --arg prompt "$PROMPT" \
+              '{"contents": [{"parts": [{"text": $prompt}]}]}' > /tmp/summary-request.json
+
+            attempt=0
+            max_retries=2
+            while [ $attempt -le $max_retries ]; do
+              HTTP_CODE=$(curl -s -w "%{http_code}" -o /tmp/summary-response.json \
+                "${GEMINI_API_URL}/models/${GEMINI_MODEL}:generateContent" \
+                -H "x-goog-api-key: ${GEMINI_API_KEY}" \
+                -H "Content-Type: application/json" \
+                -d @/tmp/summary-request.json \
+                --max-time 120)
+
+              if [ "$HTTP_CODE" = "200" ]; then
+                SUMMARY=$(jq -r '.candidates[0].content.parts[0].text // ""' /tmp/summary-response.json)
+                break
+              fi
+
+              attempt=$((attempt + 1))
+              if [ $attempt -le $max_retries ]; then
+                echo "Gemini API returned HTTP $HTTP_CODE, retrying ($attempt/$max_retries)..."
+                sleep $((attempt * 5))
+              fi
+            done
+            rm -f /tmp/summary-request.json /tmp/summary-response.json
+          fi
+
+          if [ -z "$SUMMARY" ]; then
+            SUMMARY="OVERALL_STATUS: UNKNOWN
+          VERDICT: AI analysis unavailable - review pipeline logs manually
+          CRITICAL:
+          - AI reporting could not generate analysis (check GEMINI_API_KEY configuration)
+          WARNINGS:
+          - None
+          PASSED:
+          - Pipeline execution completed
+          RECOMMENDATION: Check pipeline logs directly at ${RUN_URL}"
+          fi
+
+          # Save as artifact
+          {
+            echo "# AI Pipeline Summary"
+            echo ""
+            echo "- **Repository**: ${PROJECT}"
+            echo "- **Branch**: ${BRANCH}"
+            echo "- **Commit**: ${COMMIT}"
+            echo "- **Run**: ${RUN_URL}"
+            echo "- **Date**: ${DATE}"
+            echo "- **Model**: ${GEMINI_MODEL}"
+            echo ""
+            echo "---"
+            echo ""
+            echo "$SUMMARY"
+          } > ai-summary.md
+
+          # Export for Slack step
+          echo "SUMMARY<<SUMMARY_EOF" >> "$GITHUB_ENV"
+          echo "$SUMMARY" >> "$GITHUB_ENV"
+          echo "SUMMARY_EOF" >> "$GITHUB_ENV"
+
+          echo "$SUMMARY"
+
+      - name: Send Slack notification
+        if: always()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.slack_webhook_url }}
+          SUMMARY: ${{ env.SUMMARY }}
+        run: |
+          if [ -z "${SLACK_WEBHOOK_URL}" ]; then
+            echo "SLACK_WEBHOOK_URL not set. Skipping Slack notification."
+            echo "AI summary saved as artifact: ai-summary.md"
+            exit 0
+          fi
+
+          echo "Sending summary to Slack..."
+
+          PROJECT="${GITHUB_REPOSITORY}"
+          BRANCH="${GITHUB_REF_NAME}"
+          COMMIT="${GITHUB_SHA:0:7}"
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
+          # Parse overall status for color coding
+          OVERALL_STATUS=$(echo "$SUMMARY" | grep -oP '(?<=OVERALL_STATUS: )\S+' | head -1)
+          case "$OVERALL_STATUS" in
+            PASS)  COLOR="#36a64f" ; EMOJI="white_check_mark" ;;
+            WARN)  COLOR="#daa038" ; EMOJI="warning" ;;
+            FAIL)  COLOR="#cc0000" ; EMOJI="rotating_light" ;;
+            *)     COLOR="#808080" ; EMOJI="information_source" ;;
+          esac
+
+          VERDICT=$(echo "$SUMMARY" | grep -oP '(?<=VERDICT: ).*' | head -1)
+          VERDICT=${VERDICT:-"Pipeline analysis complete"}
+
+          # Build details text
+          DETAILS=""
+
+          CRITICAL_SECTION=$(echo "$SUMMARY" | sed -n '/^CRITICAL:/,/^[A-Z_]*:/{ /^CRITICAL:/d; /^[A-Z_]*:/d; p; }' | head -5)
+          if [ -n "$CRITICAL_SECTION" ] && ! echo "$CRITICAL_SECTION" | grep -q "None"; then
+            DETAILS="${DETAILS}:rotating_light: *Critical Issues*\n${CRITICAL_SECTION}\n\n"
+          fi
+
+          WARNINGS_SECTION=$(echo "$SUMMARY" | sed -n '/^WARNINGS:/,/^[A-Z_]*:/{ /^WARNINGS:/d; /^[A-Z_]*:/d; p; }' | head -5)
+          if [ -n "$WARNINGS_SECTION" ] && ! echo "$WARNINGS_SECTION" | grep -q "None"; then
+            DETAILS="${DETAILS}:warning: *Warnings*\n${WARNINGS_SECTION}\n\n"
+          fi
+
+          PASSED_SECTION=$(echo "$SUMMARY" | sed -n '/^PASSED:/,/^[A-Z_]*:/{ /^PASSED:/d; /^[A-Z_]*:/d; p; }' | head -5)
+          if [ -n "$PASSED_SECTION" ] && ! echo "$PASSED_SECTION" | grep -q "None"; then
+            DETAILS="${DETAILS}:white_check_mark: *Passed*\n${PASSED_SECTION}\n\n"
+          fi
+
+          RECOMMENDATION=$(echo "$SUMMARY" | grep -oP '(?<=RECOMMENDATION: ).*' | head -1)
+          if [ -n "$RECOMMENDATION" ]; then
+            DETAILS="${DETAILS}:bulb: *Recommendation:* ${RECOMMENDATION}"
+          fi
+
+          # Build Slack payload
+          SLACK_PAYLOAD=$(jq -n \
+            --arg color "$COLOR" \
+            --arg emoji "$EMOJI" \
+            --arg project "$PROJECT" \
+            --arg branch "$BRANCH" \
+            --arg commit "$COMMIT" \
+            --arg verdict "$VERDICT" \
+            --arg details "$DETAILS" \
+            --arg run_url "$RUN_URL" \
+            '{
+              "attachments": [
+                {
+                  "color": $color,
+                  "blocks": [
+                    {
+                      "type": "header",
+                      "text": {
+                        "type": "plain_text",
+                        "text": (":" + $emoji + ": Pipeline Summary: " + $project),
+                        "emoji": true
+                      }
+                    },
+                    {
+                      "type": "context",
+                      "elements": [
+                        {
+                          "type": "mrkdwn",
+                          "text": ("Branch: `" + $branch + "` | Commit: `" + $commit + "`")
+                        }
+                      ]
+                    },
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": ("*" + $verdict + "*")
+                      }
+                    },
+                    {
+                      "type": "divider"
+                    },
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": $details
+                      }
+                    },
+                    {
+                      "type": "divider"
+                    },
+                    {
+                      "type": "actions",
+                      "elements": [
+                        {
+                          "type": "button",
+                          "text": {
+                            "type": "plain_text",
+                            "text": "View Run"
+                          },
+                          "url": $run_url
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }')
+
+          SLACK_HTTP_CODE=$(curl -s -w "%{http_code}" -o /tmp/slack-response.txt \
+            -X POST -H "Content-Type: application/json" \
+            -d "$SLACK_PAYLOAD" \
+            "${SLACK_WEBHOOK_URL}" \
+            --max-time 30)
+
+          if [ "$SLACK_HTTP_CODE" = "200" ]; then
+            echo "Slack notification sent successfully."
+          else
+            echo "WARNING: Slack notification failed (HTTP $SLACK_HTTP_CODE)"
+            cat /tmp/slack-response.txt 2>/dev/null || true
+          fi
+          rm -f /tmp/slack-response.txt
+
+      - name: Upload AI reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ai-pipeline-report
+          path: |
+            ai-reports/
+            ai-summary.md
+          retention-days: 30
