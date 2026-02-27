@@ -861,7 +861,7 @@ echo "============================================"
 FALLBACK_SUMMARY="OVERALL_STATUS: UNKNOWN
 VERDICT: AI analysis unavailable - review pipeline logs manually
 CRITICAL:
-- AI reporting could not generate analysis (check GEMINI_API_KEY configuration)
+- AI reporting could not generate analysis (check AI_API_KEY configuration)
 WARNINGS:
 - None
 PASSED:
@@ -872,7 +872,7 @@ FALLBACK_STATUS=$(echo "$FALLBACK_SUMMARY" | grep -oP '(?<=OVERALL_STATUS: )\S+'
 test "$FALLBACK_STATUS" = "UNKNOWN"
 assert_ok "Fallback status is UNKNOWN"
 
-assert_contains "$FALLBACK_SUMMARY" "GEMINI_API_KEY"
+assert_contains "$FALLBACK_SUMMARY" "AI_API_KEY"
 
 echo ""
 
@@ -950,7 +950,7 @@ echo "All AI Reporting tests passed!"
 		WithExec([]string{"apk", "add", "--no-cache", "curl", "jq", "coreutils", "grep"})
 
 	if geminiApiKey != nil {
-		container = container.WithSecretVariable("GEMINI_API_KEY", geminiApiKey)
+		container = container.WithSecretVariable("AI_API_KEY", geminiApiKey)
 
 		testScript += `
 
@@ -959,13 +959,13 @@ echo "================================================"
 echo "BONUS: Live Gemini API test"
 echo "================================================"
 
-if [ -n "${GEMINI_API_KEY}" ]; then
+if [ -n "${AI_API_KEY}" ]; then
   echo "Testing real Gemini API call..."
   SMALL_PROMPT='{"contents": [{"parts": [{"text": "Reply with exactly: STATUS: PASS"}]}]}'
 
   HTTP_CODE=$(echo "$SMALL_PROMPT" | curl -s -w "%{http_code}" -o /tmp/gemini-test.json \
     "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent" \
-    -H "x-goog-api-key: ${GEMINI_API_KEY}" \
+    -H "x-goog-api-key: ${AI_API_KEY}" \
     -H "Content-Type: application/json" \
     -d @- \
     --max-time 30)
@@ -979,7 +979,7 @@ if [ -n "${GEMINI_API_KEY}" ]; then
   fi
   rm -f /tmp/gemini-test.json
 else
-  echo "  Skipped (no GEMINI_API_KEY)"
+  echo "  Skipped (no AI_API_KEY)"
 fi
 `
 	}

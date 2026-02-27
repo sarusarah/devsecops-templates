@@ -602,7 +602,8 @@ include:
 
 variables:
   ENABLE_AI_REPORT: "true"
-  # Set GEMINI_API_KEY as CI/CD secret
+  # AI_PROVIDER: "openai"  # Optional: switch to OpenAI (default: "gemini")
+  # Set AI_API_KEY as CI/CD secret (Gemini or OpenAI key)
   # Set SLACK_WEBHOOK_URL as CI/CD secret (optional)
 ```
 
@@ -615,7 +616,7 @@ jobs:
     if: always()
     uses: ./.github/workflows/ai-report.yml
     secrets:
-      gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+      ai_api_key: ${{ secrets.AI_API_KEY }}
       slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
 ```
 
@@ -624,9 +625,10 @@ jobs:
 | Variable / Secret | Description |
 |-------------------|-------------|
 | `ENABLE_AI_REPORT` | Feature toggle (default: `"false"`) |
-| `GEMINI_API_KEY` | Google AI Studio API key (CI/CD secret) |
+| `AI_API_KEY` | API key for Gemini or OpenAI (CI/CD secret) |
+| `AI_PROVIDER` | `"gemini"` (default) or `"openai"` |
 | `SLACK_WEBHOOK_URL` | Slack incoming webhook URL (CI/CD secret, optional) |
-| `GEMINI_MODEL` | Model override (default: `"gemini-2.0-flash"`) |
+| `AI_MODEL` | Model override (default: auto per provider) |
 
 ### Notifications
 ```yaml

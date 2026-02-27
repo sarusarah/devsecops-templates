@@ -2,8 +2,8 @@
 name: AI Pipeline Analysis & Slack Summary
 
 # AI-Powered Pipeline Analysis and Slack Reporting for GitHub Actions
-# Analyzes CI/CD pipeline outputs using Google Gemini and sends a consolidated
-# summary to Slack.
+# Analyzes CI/CD pipeline outputs using an AI model (Gemini or OpenAI) and sends
+# a consolidated summary to Slack.
 #
 # Usage:
 #   jobs:
@@ -11,24 +11,43 @@ name: AI Pipeline Analysis & Slack Summary
 #       needs: [build, test, sast, dependency-scan]  # list all jobs to analyze
 #       if: always()
 #       uses: ./.github/workflows/ai-report.yml  # or your template path
+#       with:
+#         ai_provider: "gemini"           # or "openai"
 #       secrets:
-#         gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+#         ai_api_key: ${{ secrets.AI_API_KEY }}
 #         slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
 #
+# Provider Defaults:
+#   gemini:  model=gemini-2.0-flash  url=https://generativelanguage.googleapis.com/v1beta
+#   openai:  model=gpt-4.1-mini     url=https://api.openai.com/v1
+#
 # See Also:
+#   - https://ai.google.dev/gemini-api/docs
+#   - https://platform.openai.com/docs/api-reference
+#   - https://api.slack.com/messaging/webhooks
 #   - docs/AI_REPORTING.md
 
 on:
   workflow_call:
     inputs:
-      gemini_model:
-        description: 'Gemini model to use for analysis'
+      ai_provider:
+        description: 'AI provider: "gemini" or "openai"'
         required: false
         type: string
-        default: 'gemini-2.0-flash'
+        default: 'gemini'
+      ai_model:
+        description: 'Model override (default: auto per provider)'
+        required: false
+        type: string
+        default: ''
+      ai_api_url:
+        description: 'API URL override (default: auto per provider)'
+        required: false
+        type: string
+        default: ''
     secrets:
-      gemini_api_key:
-        description: 'Google AI Studio API key'
+      ai_api_key:
+        description: 'API key for the selected AI provider'
         required: true
       slack_webhook_url:
         description: 'Slack incoming webhook URL'
@@ -45,58 +64,102 @@ jobs:
           path: artifacts/
         continue-on-error: true
 
-      - name: Analyze pipeline reports with Gemini
+      - name: Analyze pipeline reports with AI
         env:
-          GEMINI_API_KEY: ${{ secrets.gemini_api_key }}
-          GEMINI_MODEL: ${{ inputs.gemini_model }}
-          GEMINI_API_URL: "https://generativelanguage.googleapis.com/v1beta"
+          AI_API_KEY: ${{ secrets.ai_api_key }}
+          AI_PROVIDER: ${{ inputs.ai_provider }}
+          AI_MODEL: ${{ inputs.ai_model }}
+          AI_API_URL: ${{ inputs.ai_api_url }}
         run: |
           mkdir -p ai-reports
 
-          if [ -z "${GEMINI_API_KEY}" ]; then
-            echo "WARNING: GEMINI_API_KEY is not set. Skipping AI analysis."
-            echo '{"skipped": true, "reason": "GEMINI_API_KEY not set"}' > ai-reports/status.json
+          # Resolve provider, model, and API URL with smart defaults
+          PROVIDER="${AI_PROVIDER:-gemini}"
+
+          if [ "$PROVIDER" = "openai" ]; then
+            MODEL="${AI_MODEL:-gpt-4.1-mini}"
+            API_URL="${AI_API_URL:-https://api.openai.com/v1}"
+          else
+            MODEL="${AI_MODEL:-gemini-2.0-flash}"
+            API_URL="${AI_API_URL:-https://generativelanguage.googleapis.com/v1beta}"
+          fi
+
+          echo "AI Provider: ${PROVIDER}"
+          echo "Model: ${MODEL}"
+          echo "API URL: ${API_URL}"
+
+          if [ -z "${AI_API_KEY}" ]; then
+            echo "WARNING: AI_API_KEY is not set. Skipping AI analysis."
+            echo "Set AI_API_KEY as a repository secret to enable AI-powered reporting."
+            echo '{"skipped": true, "reason": "AI_API_KEY not set"}' > ai-reports/status.json
             exit 0
           fi
 
-          # Helper: call Gemini API with retry
-          call_gemini() {
+          # Helper: call AI API with retry (supports Gemini and OpenAI)
+          call_ai() {
             local prompt_file="$1"
             local output_file="$2"
             local attempt=0
             local max_retries=2
 
             while [ $attempt -le $max_retries ]; do
-              HTTP_CODE=$(curl -s -w "%{http_code}" -o "$output_file.raw" \
-                "${GEMINI_API_URL}/models/${GEMINI_MODEL}:generateContent" \
-                -H "x-goog-api-key: ${GEMINI_API_KEY}" \
-                -H "Content-Type: application/json" \
-                -d @"$prompt_file" \
-                --max-time 120)
+              if [ "$PROVIDER" = "openai" ]; then
+                HTTP_CODE=$(curl -s -w "%{http_code}" -o "$output_file.raw" \
+                  "${API_URL}/chat/completions" \
+                  -H "Authorization: Bearer ${AI_API_KEY}" \
+                  -H "Content-Type: application/json" \
+                  -d @"$prompt_file" \
+                  --max-time 120)
+              else
+                HTTP_CODE=$(curl -s -w "%{http_code}" -o "$output_file.raw" \
+                  "${API_URL}/models/${MODEL}:generateContent" \
+                  -H "x-goog-api-key: ${AI_API_KEY}" \
+                  -H "Content-Type: application/json" \
+                  -d @"$prompt_file" \
+                  --max-time 120)
+              fi
 
               if [ "$HTTP_CODE" = "200" ]; then
-                jq -r '.candidates[0].content.parts[0].text // "No response generated"' \
-                  "$output_file.raw" > "$output_file" 2>/dev/null
+                if [ "$PROVIDER" = "openai" ]; then
+                  jq -r '.choices[0].message.content // "No response generated"' \
+                    "$output_file.raw" > "$output_file" 2>/dev/null
+                else
+                  jq -r '.candidates[0].content.parts[0].text // "No response generated"' \
+                    "$output_file.raw" > "$output_file" 2>/dev/null
+                fi
                 rm -f "$output_file.raw"
                 return 0
               fi
 
               attempt=$((attempt + 1))
               if [ $attempt -le $max_retries ]; then
-                echo "Gemini API returned HTTP $HTTP_CODE, retrying ($attempt/$max_retries)..."
+                echo "${PROVIDER} API returned HTTP $HTTP_CODE, retrying ($attempt/$max_retries)..."
                 sleep $((attempt * 5))
               fi
             done
 
-            echo "ERROR: Gemini API failed after $max_retries retries (HTTP $HTTP_CODE)"
+            echo "ERROR: ${PROVIDER} API failed after $max_retries retries (HTTP $HTTP_CODE)"
             cat "$output_file.raw" 2>/dev/null || true
             rm -f "$output_file.raw"
-            echo "AI analysis unavailable (Gemini API error $HTTP_CODE)" > "$output_file"
+            echo "AI analysis unavailable (${PROVIDER} API error $HTTP_CODE)" > "$output_file"
             return 1
           }
 
+          # Helper: build request JSON (provider-specific format)
+          build_request() {
+            local prompt="$1"
+            local request_file="$2"
+            if [ "$PROVIDER" = "openai" ]; then
+              jq -n --arg model "$MODEL" --arg prompt "$prompt" \
+                '{"model": $model, "messages": [{"role": "user", "content": $prompt}]}' > "$request_file"
+            else
+              jq -n --arg prompt "$prompt" \
+                '{"contents": [{"parts": [{"text": $prompt}]}]}' > "$request_file"
+            fi
+          }
+
           echo "=== AI Pipeline Analysis ==="
-          echo "Model: ${GEMINI_MODEL}"
+          echo "Model: ${MODEL}"
           echo ""
 
           # Find all report files in downloaded artifacts
@@ -158,10 +221,9 @@ jobs:
           ${REPORT_CONTENT}"
 
             SAFE_NAME=$(echo "$BASENAME" | sed 's|[^a-zA-Z0-9_-]|-|g')
-            jq -n --arg prompt "$PROMPT" \
-              '{"contents": [{"parts": [{"text": $prompt}]}]}' > "/tmp/request-${SAFE_NAME}.json"
+            build_request "$PROMPT" "/tmp/request-${SAFE_NAME}.json"
 
-            if call_gemini "/tmp/request-${SAFE_NAME}.json" "ai-reports/${SAFE_NAME}.txt"; then
+            if call_ai "/tmp/request-${SAFE_NAME}.json" "ai-reports/${SAFE_NAME}.txt"; then
               echo "  Done."
             else
               echo "  Failed."
@@ -173,7 +235,8 @@ jobs:
           # Write metadata
           REPORT_COUNT=$(ls ai-reports/*.txt 2>/dev/null | wc -l)
           jq -n \
-            --arg model "$GEMINI_MODEL" \
+            --arg provider "$PROVIDER" \
+            --arg model "$MODEL" \
             --arg date "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --arg repo "$GITHUB_REPOSITORY" \
             --arg branch "$GITHUB_REF_NAME" \
@@ -181,6 +244,7 @@ jobs:
             --arg run_url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
             --argjson count "$REPORT_COUNT" \
             '{
+              "provider": $provider,
               "model": $model,
               "date": $date,
               "repository": $repo,
@@ -196,10 +260,22 @@ jobs:
 
       - name: Generate consolidated summary
         env:
-          GEMINI_API_KEY: ${{ secrets.gemini_api_key }}
-          GEMINI_MODEL: ${{ inputs.gemini_model }}
-          GEMINI_API_URL: "https://generativelanguage.googleapis.com/v1beta"
+          AI_API_KEY: ${{ secrets.ai_api_key }}
+          AI_PROVIDER: ${{ inputs.ai_provider }}
+          AI_MODEL: ${{ inputs.ai_model }}
+          AI_API_URL: ${{ inputs.ai_api_url }}
         run: |
+          # Resolve provider, model, and API URL with smart defaults
+          PROVIDER="${AI_PROVIDER:-gemini}"
+
+          if [ "$PROVIDER" = "openai" ]; then
+            MODEL="${AI_MODEL:-gpt-4.1-mini}"
+            API_URL="${AI_API_URL:-https://api.openai.com/v1}"
+          else
+            MODEL="${AI_MODEL:-gemini-2.0-flash}"
+            API_URL="${AI_API_URL:-https://generativelanguage.googleapis.com/v1beta}"
+          fi
+
           PROJECT="${GITHUB_REPOSITORY}"
           BRANCH="${GITHUB_REF_NAME}"
           COMMIT="${GITHUB_SHA:0:7}"
@@ -207,7 +283,7 @@ jobs:
           DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
           SKIP_AI=false
-          if [ -z "${GEMINI_API_KEY}" ]; then
+          if [ -z "${AI_API_KEY}" ]; then
             SKIP_AI=true
           fi
 
@@ -251,27 +327,46 @@ jobs:
           Individual stage analyses:
           ${COMBINED_ANALYSES}"
 
-            jq -n --arg prompt "$PROMPT" \
-              '{"contents": [{"parts": [{"text": $prompt}]}]}' > /tmp/summary-request.json
+            # Build provider-specific request
+            if [ "$PROVIDER" = "openai" ]; then
+              jq -n --arg model "$MODEL" --arg prompt "$PROMPT" \
+                '{"model": $model, "messages": [{"role": "user", "content": $prompt}]}' > /tmp/summary-request.json
+            else
+              jq -n --arg prompt "$PROMPT" \
+                '{"contents": [{"parts": [{"text": $prompt}]}]}' > /tmp/summary-request.json
+            fi
 
             attempt=0
             max_retries=2
             while [ $attempt -le $max_retries ]; do
-              HTTP_CODE=$(curl -s -w "%{http_code}" -o /tmp/summary-response.json \
-                "${GEMINI_API_URL}/models/${GEMINI_MODEL}:generateContent" \
-                -H "x-goog-api-key: ${GEMINI_API_KEY}" \
-                -H "Content-Type: application/json" \
-                -d @/tmp/summary-request.json \
-                --max-time 120)
+              if [ "$PROVIDER" = "openai" ]; then
+                HTTP_CODE=$(curl -s -w "%{http_code}" -o /tmp/summary-response.json \
+                  "${API_URL}/chat/completions" \
+                  -H "Authorization: Bearer ${AI_API_KEY}" \
+                  -H "Content-Type: application/json" \
+                  -d @/tmp/summary-request.json \
+                  --max-time 120)
+              else
+                HTTP_CODE=$(curl -s -w "%{http_code}" -o /tmp/summary-response.json \
+                  "${API_URL}/models/${MODEL}:generateContent" \
+                  -H "x-goog-api-key: ${AI_API_KEY}" \
+                  -H "Content-Type: application/json" \
+                  -d @/tmp/summary-request.json \
+                  --max-time 120)
+              fi
 
               if [ "$HTTP_CODE" = "200" ]; then
-                SUMMARY=$(jq -r '.candidates[0].content.parts[0].text // ""' /tmp/summary-response.json)
+                if [ "$PROVIDER" = "openai" ]; then
+                  SUMMARY=$(jq -r '.choices[0].message.content // ""' /tmp/summary-response.json)
+                else
+                  SUMMARY=$(jq -r '.candidates[0].content.parts[0].text // ""' /tmp/summary-response.json)
+                fi
                 break
               fi
 
               attempt=$((attempt + 1))
               if [ $attempt -le $max_retries ]; then
-                echo "Gemini API returned HTTP $HTTP_CODE, retrying ($attempt/$max_retries)..."
+                echo "${PROVIDER} API returned HTTP $HTTP_CODE, retrying ($attempt/$max_retries)..."
                 sleep $((attempt * 5))
               fi
             done
@@ -282,7 +377,7 @@ jobs:
             SUMMARY="OVERALL_STATUS: UNKNOWN
           VERDICT: AI analysis unavailable - review pipeline logs manually
           CRITICAL:
-          - AI reporting could not generate analysis (check GEMINI_API_KEY configuration)
+          - AI reporting could not generate analysis (check AI_API_KEY configuration)
           WARNINGS:
           - None
           PASSED:
@@ -299,7 +394,8 @@ jobs:
             echo "- **Commit**: ${COMMIT}"
             echo "- **Run**: ${RUN_URL}"
             echo "- **Date**: ${DATE}"
-            echo "- **Model**: ${GEMINI_MODEL}"
+            echo "- **Provider**: ${PROVIDER}"
+            echo "- **Model**: ${MODEL}"
             echo ""
             echo "---"
             echo ""

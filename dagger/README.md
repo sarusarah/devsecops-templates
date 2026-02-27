@@ -116,7 +116,7 @@ dagger call ai-report-test --source=../examples/node
 # Run with live Gemini API validation
 dagger call ai-report-test \
   --source=../examples/node \
-  --gemini-api-key=env:GEMINI_API_KEY
+  --gemini-api-key=env:AI_API_KEY
 ```
 
 Validates: report file discovery, Gemini request/response handling, summary aggregation, Slack Block Kit payload construction, fallback behavior, and large report truncation.

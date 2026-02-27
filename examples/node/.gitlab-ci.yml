@@ -33,8 +33,9 @@ variables:
   # DTRACK_API_KEY: "${DTRACK_API_KEY}"  # Set as CI/CD secret variable
 
   # AI-powered pipeline analysis + Slack notifications (optional)
-  ENABLE_AI_REPORT: "false"  # Set to "true" and configure GEMINI_API_KEY + SLACK_WEBHOOK_URL
-  # GEMINI_API_KEY: set as CI/CD secret (from Google AI Studio)
+  ENABLE_AI_REPORT: "false"  # Set to "true" and configure AI_API_KEY + SLACK_WEBHOOK_URL
+  # AI_PROVIDER: "gemini"   # or "openai" (default: "gemini")
+  # AI_API_KEY: set as CI/CD secret (Gemini or OpenAI API key)
   # SLACK_WEBHOOK_URL: set as CI/CD secret (Slack incoming webhook)
 
 # Team-spezifische Implementierung via extends, ohne Template zu kopieren

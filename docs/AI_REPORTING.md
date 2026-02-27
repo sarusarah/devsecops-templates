@@ -1,6 +1,6 @@
 # AI-Powered Pipeline Reporting
 
-Automated CI/CD pipeline analysis using Google Gemini with Slack notifications. Replaces reading thousands of lines of raw logs with concise, actionable summaries.
+Automated CI/CD pipeline analysis using AI (Google Gemini or OpenAI) with Slack notifications. Replaces reading thousands of lines of raw logs with concise, actionable summaries.
 
 ---
 
@@ -19,11 +19,20 @@ Automated CI/CD pipeline analysis using Google Gemini with Slack notifications. 
 
 ## Quick Start
 
-### 1. Get a Gemini API Key
+### 1. Get an AI API Key
 
+Choose your preferred AI provider:
+
+**Google Gemini (default):**
 1. Go to [Google AI Studio](https://aistudio.google.com/apikey)
 2. Create a new API key
-3. Add it as a CI/CD secret named `GEMINI_API_KEY`
+3. Add it as a CI/CD secret named `AI_API_KEY`
+
+**OpenAI:**
+1. Go to [OpenAI Platform](https://platform.openai.com/api-keys)
+2. Create a new API key
+3. Add it as a CI/CD secret named `AI_API_KEY`
+4. Set the `AI_PROVIDER` variable to `"openai"`
 
 ### 2. Set Up Slack Webhook (Optional)
 
@@ -46,6 +55,7 @@ include:
 
 variables:
   ENABLE_AI_REPORT: "true"
+  # AI_PROVIDER: "openai"       # Optional: defaults to "gemini"
 ```
 
 **GitHub Actions:**
@@ -60,8 +70,10 @@ jobs:
     if: always()
     uses: ./.github/workflows/ai-report.yml  # or your template path
     secrets:
-      gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+      ai_api_key: ${{ secrets.AI_API_KEY }}
       slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+    # with:
+    #   ai_provider: "openai"   # Optional: defaults to "gemini"
 ```
 
 ---
@@ -73,15 +85,15 @@ jobs:
 ```
 source → build → test → package → [deploy] → verify → report → ai-analysis → ai-summary
                                                                      │              │
-                                                              Gemini analyzes   Consolidated
+                                                              AI analyzes       Consolidated
                                                               each report       summary → Slack
 ```
 
 ### Two-Stage Process
 
-1. **ai-analysis** — Collects all pipeline artifact reports (security scans, test results, build output) and sends each to Gemini for individual analysis. Each report gets a structured summary with status, severity, key findings, and recommended actions.
+1. **ai-analysis** — Collects all pipeline artifact reports (security scans, test results, build output) and sends each to the configured AI provider for individual analysis. Each report gets a structured summary with status, severity, key findings, and recommended actions.
 
-2. **ai-summary** — Aggregates all individual analyses and asks Gemini for a consolidated pipeline summary. Posts the result to Slack as a single, color-coded message with critical issues, warnings, and what passed cleanly.
+2. **ai-summary** — Aggregates all individual analyses and asks the AI provider for a consolidated pipeline summary. Posts the result to Slack as a single, color-coded message with critical issues, warnings, and what passed cleanly.
 
 ### What Gets Analyzed
 
@@ -113,7 +125,7 @@ Deployment stages are **not** analyzed:
 
 | Secret | Required | Description |
 |--------|----------|-------------|
-| `GEMINI_API_KEY` | Yes | Google AI Studio API key |
+| `AI_API_KEY` | Yes | API key for the configured AI provider (Google AI Studio or OpenAI) |
 | `SLACK_WEBHOOK_URL` | No | Slack incoming webhook URL. If not set, reports are saved as artifacts only |
 
 ### Variables
@@ -121,7 +133,9 @@ Deployment stages are **not** analyzed:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `ENABLE_AI_REPORT` | `"false"` | Feature toggle — set to `"true"` to enable |
-| `GEMINI_MODEL` | `"gemini-2.0-flash"` | Gemini model to use |
+| `AI_PROVIDER` | `"gemini"` | AI provider to use: `"gemini"` or `"openai"` |
+| `AI_MODEL` | Auto per provider | Model override. Defaults: `gemini-2.0-flash` (Gemini), `gpt-4.1-mini` (OpenAI) |
+| `AI_API_URL` | Auto per provider | API endpoint override. Defaults are set automatically per provider |
 
 ---
 
@@ -148,9 +162,11 @@ variables:
   ENABLE_DEPENDENCY_SCAN: "true"
   ENABLE_SAST: "true"
   ENABLE_AI_REPORT: "true"                       # Enable AI reporting
+  # AI_PROVIDER: "openai"                        # Optional: defaults to "gemini"
+  # AI_MODEL: "gpt-4.1"                          # Optional: override the model
 ```
 
-Then add `GEMINI_API_KEY` and optionally `SLACK_WEBHOOK_URL` as CI/CD secrets in GitLab Settings > CI/CD > Variables.
+Then add `AI_API_KEY` and optionally `SLACK_WEBHOOK_URL` as CI/CD secrets in GitLab Settings > CI/CD > Variables.
 
 ### Monorepo Setup
 
@@ -214,15 +230,19 @@ jobs:
     if: always()                                   # Run even if jobs fail
     uses: ./.github/workflows/ai-report.yml        # Or your template path
     secrets:
-      gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+      ai_api_key: ${{ secrets.AI_API_KEY }}
       slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+    # with:
+    #   ai_provider: "openai"
+    #   ai_model: "gpt-4.1"
 ```
 
 ### Inputs
 
 | Input | Default | Description |
 |-------|---------|-------------|
-| `gemini_model` | `"gemini-2.0-flash"` | Gemini model to use |
+| `ai_provider` | `"gemini"` | AI provider: `"gemini"` or `"openai"` |
+| `ai_model` | Auto per provider | Model override (defaults: `gemini-2.0-flash` for Gemini, `gpt-4.1-mini` for OpenAI) |
 
 ---
 
@@ -269,23 +289,28 @@ Branch: main | Commit: abc1234
 | Variable | Default | Scope | Description |
 |----------|---------|-------|-------------|
 | `ENABLE_AI_REPORT` | `"false"` | `base.yml` | Enable AI reporting |
-| `GEMINI_MODEL` | `"gemini-2.0-flash"` | `ai-report.yml` | Gemini model |
-| `GEMINI_API_KEY` | — | CI/CD secret | Google AI Studio API key |
+| `AI_PROVIDER` | `"gemini"` | `ai-report.yml` | AI provider: `"gemini"` or `"openai"` |
+| `AI_MODEL` | Auto per provider | `ai-report.yml` | Model override (defaults: `gemini-2.0-flash` / `gpt-4.1-mini`) |
+| `AI_API_URL` | Auto per provider | `ai-report.yml` | API endpoint override |
+| `AI_API_KEY` | — | CI/CD secret | API key for the configured AI provider |
 | `SLACK_WEBHOOK_URL` | — | CI/CD secret | Slack webhook URL |
 
 ### GitHub Actions
 
 | Input/Secret | Default | Type | Description |
 |-------------|---------|------|-------------|
-| `gemini_model` | `"gemini-2.0-flash"` | Input | Gemini model |
-| `gemini_api_key` | — | Secret (required) | Google AI Studio API key |
+| `ai_provider` | `"gemini"` | Input | AI provider: `"gemini"` or `"openai"` |
+| `ai_model` | Auto per provider | Input | Model override (defaults: `gemini-2.0-flash` / `gpt-4.1-mini`) |
+| `ai_api_key` | — | Secret (required) | API key for the configured AI provider |
 | `slack_webhook_url` | — | Secret (optional) | Slack webhook URL |
 
 ---
 
 ## Vertex AI Upgrade Path
 
-The default configuration uses Google AI Studio with a simple API key. For organizations requiring Swiss data residency (data stays in Zurich), you can upgrade to Vertex AI:
+> **Note:** Vertex AI is specific to Google Gemini. This upgrade path applies only when using `AI_PROVIDER: "gemini"` (the default).
+
+The default Gemini configuration uses Google AI Studio with a simple API key. For organizations requiring Swiss data residency (data stays in Zurich), you can upgrade to Vertex AI:
 
 ### Requirements
 - Google Cloud account with billing enabled
@@ -303,17 +328,17 @@ The Gemini model and prompts remain identical — only the API endpoint and auth
 | **Data residency** | No guarantee | Zurich (europe-west6) |
 | **Cost** | Same | Same |
 
-To switch, override `GEMINI_API_URL` and adjust authentication in the template.
+To switch, override `AI_API_URL` and adjust authentication in the template.
 
 ---
 
 ## Troubleshooting
 
-### AI analysis skipped — "GEMINI_API_KEY not set"
+### AI analysis skipped — "AI_API_KEY not set"
 
 The API key is not configured as a CI/CD secret.
 
-**Fix:** Add `GEMINI_API_KEY` in GitLab Settings > CI/CD > Variables (or GitHub repo Settings > Secrets).
+**Fix:** Add `AI_API_KEY` in GitLab Settings > CI/CD > Variables (or GitHub repo Settings > Secrets).
 
 ### Gemini API returns 403
 
@@ -322,6 +347,23 @@ The API key is invalid or the Gemini API is not enabled.
 **Fix:**
 1. Verify the key at [Google AI Studio](https://aistudio.google.com/apikey)
 2. Ensure the Generative Language API is enabled for your project
+
+### OpenAI API returns 401
+
+The API key is invalid or has been revoked.
+
+**Fix:**
+1. Verify the key at [OpenAI Platform](https://platform.openai.com/api-keys)
+2. Ensure the key has not expired and has sufficient permissions
+
+### OpenAI API returns 429 (Rate Limited / Quota Exceeded)
+
+Too many requests or you have exceeded your usage quota.
+
+**Fix:**
+1. Check your [OpenAI usage dashboard](https://platform.openai.com/usage)
+2. Ensure your account has billing configured and sufficient credits
+3. The template retries automatically (up to 2 times with backoff)
 
 ### Gemini API returns 429 (Rate Limited)
 
@@ -349,13 +391,15 @@ The AI analysis only processes reports that exist as artifacts from previous job
 
 ### Large reports are truncated
 
-Reports larger than 500KB are truncated before being sent to Gemini. The AI is informed about the truncation in the prompt.
+Reports larger than 500KB are truncated before being sent to the AI provider. The AI is informed about the truncation in the prompt.
 
 This is expected behavior to stay within API limits. The most relevant findings are typically in the first portion of the report.
 
 ---
 
 ## Cost Estimates
+
+### Google Gemini (gemini-2.0-flash)
 
 | Scenario | Estimated Cost |
 |----------|---------------|
@@ -364,3 +408,13 @@ This is expected behavior to stay within API limits. The most relevant findings 
 | 1000 pipelines/day | ~$5 - $10/day |
 
 Based on Gemini 2.0 Flash pricing: $0.10/1M input tokens, $0.40/1M output tokens.
+
+### OpenAI (gpt-4.1-mini)
+
+| Scenario | Estimated Cost |
+|----------|---------------|
+| Single pipeline run (5 reports) | ~$0.01 - $0.02 |
+| 100 pipelines/day | ~$1.00 - $2.00/day |
+| 1000 pipelines/day | ~$10 - $20/day |
+
+Based on GPT-4.1 Mini pricing: $0.40/1M input tokens, $1.60/1M output tokens.
