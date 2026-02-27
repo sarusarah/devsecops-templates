@@ -429,7 +429,7 @@ jobs:
           RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
           # Parse overall status for color coding
-          OVERALL_STATUS=$(echo "$SUMMARY" | grep -oP '(?<=OVERALL_STATUS: )\S+' | head -1)
+          OVERALL_STATUS=$(echo "$SUMMARY" | sed -n 's/^OVERALL_STATUS: \([^ ]*\).*/\1/p' | head -1)
           case "$OVERALL_STATUS" in
             PASS)  COLOR="#36a64f" ; EMOJI="white_check_mark" ;;
             WARN)  COLOR="#daa038" ; EMOJI="warning" ;;
@@ -437,7 +437,7 @@ jobs:
             *)     COLOR="#808080" ; EMOJI="information_source" ;;
           esac
 
-          VERDICT=$(echo "$SUMMARY" | grep -oP '(?<=VERDICT: ).*' | head -1)
+          VERDICT=$(echo "$SUMMARY" | sed -n 's/^VERDICT: //p' | head -1)
           VERDICT=${VERDICT:-"Pipeline analysis complete"}
 
           # Build details text
@@ -458,7 +458,7 @@ jobs:
             DETAILS="${DETAILS}:white_check_mark: *Passed*\n${PASSED_SECTION}\n\n"
           fi
 
-          RECOMMENDATION=$(echo "$SUMMARY" | grep -oP '(?<=RECOMMENDATION: ).*' | head -1)
+          RECOMMENDATION=$(echo "$SUMMARY" | sed -n 's/^RECOMMENDATION: //p' | head -1)
           if [ -n "$RECOMMENDATION" ]; then
             DETAILS="${DETAILS}:bulb: *Recommendation:* ${RECOMMENDATION}"
           fi
