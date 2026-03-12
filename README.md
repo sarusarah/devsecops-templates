@@ -12,8 +12,8 @@ Include the templates you need in your `.gitlab-ci.yml` and enable desired secur
 ```yaml
 # your-project/.gitlab-ci.yml
 include:
-  - project: platform/devsecops-template
-    ref: v1.0.1
+  - project: components/dev-sec-ops
+    #ref: v1.0.1
     file:
       - /templates/gitlab/base.yml
       - /templates/gitlab/security/secrets.yml
