@@ -24,6 +24,9 @@
 #   TRIVY_SEVERITY: ""                  # Severities to report (default: "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL")
 #   TRIVY_EXIT_CODE: "0"                # Exit code on vulnerabilities: "0" (warn) or "1" (fail)
 #   TRIVY_NON_SSL: "false"              # Allow insecure registries (default: "false")
+#   TRIVY_SCANNERS: ""                  # Scanners to use (default: "vuln,secret")
+#   TRIVY_IGNOREFILE: ""                # Path to .trivyignore file (default: none)
+#   TRIVY_IGNORE_UNFIXED: "false"       # Ignore vulnerabilities without a fix (default: "false")
 #
 # Image Reference Construction:
 #   Final image: ${IMAGE_NAME}/${CONTAINER_IMAGE_SUFFIX}:${IMAGE_TAG}
@@ -76,14 +79,29 @@ container-security-scan:
       echo "Full reference: ${IMAGE_REF}"
       echo "================================================"
 
+      # Build common Trivy flags
+      TRIVY_COMMON_FLAGS="--severity ${TRIVY_SEVERITY:-UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL}"
+      TRIVY_COMMON_FLAGS="${TRIVY_COMMON_FLAGS} --image-src remote"
+      TRIVY_COMMON_FLAGS="${TRIVY_COMMON_FLAGS} --insecure=${TRIVY_NON_SSL}"
+
+      if [ -n "${TRIVY_SCANNERS}" ]; then
+        TRIVY_COMMON_FLAGS="${TRIVY_COMMON_FLAGS} --scanners ${TRIVY_SCANNERS}"
+      fi
+
+      if [ -n "${TRIVY_IGNOREFILE}" ] && [ -f "${TRIVY_IGNOREFILE}" ]; then
+        TRIVY_COMMON_FLAGS="${TRIVY_COMMON_FLAGS} --ignorefile ${TRIVY_IGNOREFILE}"
+      fi
+
+      if [ "${TRIVY_IGNORE_UNFIXED}" = "true" ]; then
+        TRIVY_COMMON_FLAGS="${TRIVY_COMMON_FLAGS} --ignore-unfixed"
+      fi
+
       # Use remote scanning since docker daemon is not available in GitLab CI
       trivy image \
-        --severity "${TRIVY_SEVERITY:-UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL}" \
+        ${TRIVY_COMMON_FLAGS} \
         --exit-code "${TRIVY_EXIT_CODE:-0}" \
         --format json \
         --output trivy.json \
-        --image-src remote \
-        --insecure="${TRIVY_NON_SSL}" \
         "${IMAGE_REF}"
 
       # Also generate a table format for easier reading in job logs
@@ -91,10 +109,8 @@ container-security-scan:
       echo "Vulnerability Summary:"
       echo "================================================"
       trivy image \
-        --severity "${TRIVY_SEVERITY:-UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL}" \
+        ${TRIVY_COMMON_FLAGS} \
         --format table \
-        --image-src remote \
-        --insecure="${TRIVY_NON_SSL}" \
         "${IMAGE_REF}"
   rules:
     - if: '$ENABLE_CONTAINER_SCAN == "true"'
