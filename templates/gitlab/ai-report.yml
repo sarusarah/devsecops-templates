@@ -468,6 +468,9 @@ ai-summary:
 
       echo "Sending summary to Slack..."
 
+      # Strip markdown bold markers from AI response for reliable parsing
+      SUMMARY=$(echo "$SUMMARY" | sed 's/\*\*//g')
+
       # Parse overall status for color coding
       OVERALL_STATUS=$(echo "$SUMMARY" | sed -n 's/^OVERALL_STATUS: \([^ ]*\).*/\1/p' | head -1)
       case "$OVERALL_STATUS" in
@@ -502,6 +505,11 @@ ai-summary:
       RECOMMENDATION=$(echo "$SUMMARY" | sed -n 's/^RECOMMENDATION: //p' | head -1)
       if [ -n "$RECOMMENDATION" ]; then
         DETAILS="${DETAILS}:bulb: *Recommendation:* ${RECOMMENDATION}"
+      fi
+
+      # Fallback if DETAILS is empty (prevents Slack rejecting empty section)
+      if [ -z "$DETAILS" ]; then
+        DETAILS="$VERDICT"
       fi
 
       # Build Slack payload using Block Kit
