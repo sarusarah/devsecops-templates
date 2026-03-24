@@ -32,6 +32,7 @@
 dtrack-upload:
   stage: source
   image: aquasec/trivy:0.58.1
+  cache: {}
   variables:
     # Default Dependency-Track instance URL (can be overridden per project)
     DTRACK_URL: "https://api.dtrack.cnc-demo.liip.cloud"

@@ -50,6 +50,8 @@
 sast:
   stage: source
   image: aquasec/trivy:0.58.1
+  before_script: []
+  cache: {}
   script:
     - trivy --version
     - |
@@ -76,6 +78,8 @@ sast:
 sast-semgrep:
   stage: source
   image: returntocorp/semgrep:1.97.0
+  before_script: []
+  cache: {}
   script:
     - semgrep --version
     - semgrep scan --config p/security-audit --json -o semgrep.json "${PROJECT_PATH:-.}"

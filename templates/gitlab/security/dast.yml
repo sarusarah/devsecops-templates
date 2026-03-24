@@ -64,6 +64,8 @@
 dast-zap:
   stage: verify
   image: ghcr.io/zaproxy/zaproxy:2.15.0
+  before_script: []
+  cache: {}
   script:
     - |
       if [ -z "${STAGING_URL}" ]; then

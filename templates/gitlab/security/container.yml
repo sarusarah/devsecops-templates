@@ -53,6 +53,7 @@
 container-security-scan:
   stage: package
   image: aquasec/trivy:0.58.1
+  cache: {}
   before_script:
     - |
       # Authenticate with container registry for remote scanning
