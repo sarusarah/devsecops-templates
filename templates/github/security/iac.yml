@@ -47,7 +47,7 @@ jobs:
 
       - name: Run Trivy IaC scan
         if: steps.check_dir.outputs.exists == 'true'
-        uses: aquasecurity/trivy-action@latest
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
           scan-type: 'config'
           scan-ref: ${{ steps.check_dir.outputs.target_dir }}
