@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run Trivy container scan
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@latest
         env:
           TRIVY_USERNAME: ${{ secrets.registry_username || github.actor }}
           TRIVY_PASSWORD: ${{ secrets.registry_password || secrets.GITHUB_TOKEN }}
@@ -56,7 +56,7 @@ jobs:
           retention-days: 7
 
       - name: Generate vulnerability summary
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@latest
         env:
           TRIVY_USERNAME: ${{ secrets.registry_username || github.actor }}
           TRIVY_PASSWORD: ${{ secrets.registry_password || secrets.GITHUB_TOKEN }}
