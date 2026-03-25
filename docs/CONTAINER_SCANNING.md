@@ -18,7 +18,7 @@ Results are integrated with GitLab's Security Dashboard for centralized vulnerab
 ```yaml
 # .gitlab-ci.yml
 include:
-  - project: platform/devsecops-template
+  - project: components/dev-sec-ops
     ref: main
     file:
       - /templates/gitlab/security/container.yml
@@ -62,7 +62,7 @@ Your build pushes to `${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}`:
 
 ```yaml
 include:
-  - project: platform/devsecops-template
+  - project: components/dev-sec-ops
     file: /templates/gitlab/security/container.yml
 
 stages:

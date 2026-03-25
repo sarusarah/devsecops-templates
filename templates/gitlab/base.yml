@@ -8,7 +8,7 @@
 #
 # Quick Start:
 #   include:
-#     - project: platform/devsecops-template
+#     - project: components/dev-sec-ops
 #       file: /templates/gitlab/base.yml
 #
 #   variables:

@@ -1,7 +1,27 @@
 ---
+# =============================================================================
+# PHP Drupal Application — DevSecOps Pipeline
+# =============================================================================
+#
+# What this demonstrates:
+#   Full CI/CD pipeline for a PHP Drupal app with Trivy unified scanning,
+#   DAST against staging, GitOps deployment, and optional AI reports.
+#
+# Prerequisites:
+#   - Drupal project with composer.lock
+#   - GitOps repository for deployments
+#
+# Required CI/CD secrets:
+#   - GITOPS_SSH_KEY          — SSH key for pushing to GitOps repo
+#   - DTRACK_API_KEY          — (optional) Dependency-Track API key
+#   - AI_API_KEY              — (optional) Gemini or OpenAI API key
+#   - SLACK_WEBHOOK_URL       — (optional) Slack incoming webhook URL
+#
+# =============================================================================
+
 include:
-  - project: platform/devsecops-template
-    ref: v1.0.0
+  - project: components/dev-sec-ops
+    ref: v1.0.2
     file:
       - /templates/gitlab/base.yml
       - /templates/gitlab/security/secrets.yml
@@ -10,18 +30,58 @@ include:
       - /templates/gitlab/deploy-staging.yml
       - /templates/gitlab/deploy-production.yml
       - /templates/gitlab/monitor.yml
+      # - /templates/gitlab/security/dtrack.yml    # Optional: SBOM upload to Dependency-Track
+      # - /templates/gitlab/ai-report.yml          # Optional: AI pipeline analysis + Slack
+      # - /templates/gitlab/security/container.yml # Optional: container image scanning
+      # - /templates/gitlab/security/iac.yml       # Optional: IaC scanning (Terraform, K8s)
+      # - /templates/gitlab/security/dast.yml      # Optional: OWASP ZAP DAST
 
+# ---------------------------------------------------------------------------
+# Variables — tune scanning, deployment, and optional integrations
+# ---------------------------------------------------------------------------
 variables:
   APP_NAME: "drupal-app"
   LANGUAGE: "php"
   PHP_VERSION: "8.3"
 
+  # --- Security scanner selection -----------------------------------------
   # Use Trivy for unified security scanning (default)
   SECURITY_SCANNER: "trivy"
 
+  # --- Security policy & error handling ------------------------------------
+  # SECURITY_POLICY: "permissive"  # Start permissive, switch to "strict" once triaged
+  # TRIVY_EXIT_CODE: "0"           # "0" = warn only, "1" = fail pipeline on findings
+  # TRIVY_SEVERITY: "CRITICAL,HIGH" # Severity levels to report
+  # TRIVY_IGNORE_UNFIXED: "true"   # Ignore vulnerabilities without a fix
+
+  # --- DAST ---------------------------------------------------------------
   ENABLE_DAST: "true"
   STAGING_URL: "https://staging.drupal.example.com"
+
+  # --- GitOps deployment --------------------------------------------------
   GITOPS_REPO: "git@gitlab.example.com:gitops/drupal-app.git"
+  # GITOPS_PATH: "values.yaml"
+  # GITOPS_IMAGE_TAG_YQ_PATH: ".image.tag"
+
+  # --- Container scanning (optional) --------------------------------------
+  # ENABLE_CONTAINER_SCAN: "true"
+  # IMAGE_NAME: "${CI_REGISTRY_IMAGE}"
+  # IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
+
+  # --- Dependency-Track SBOM upload (optional) ----------------------------
+  # ENABLE_DTRACK: "true"
+  # DTRACK_URL: "https://api.dtrack.example.com"
+  # DTRACK_API_KEY: "${DTRACK_API_KEY}"  # CI/CD secret
+
+  # --- AI-powered pipeline analysis (optional) ----------------------------
+  # ENABLE_AI_REPORT: "true"
+  # AI_PROVIDER: "gemini"          # or "openai" (default: "gemini")
+  # AI_API_KEY: set as CI/CD secret (Gemini or OpenAI API key)
+  # SLACK_WEBHOOK_URL: set as CI/CD secret (Slack incoming webhook)
+
+# ---------------------------------------------------------------------------
+# Custom jobs
+# ---------------------------------------------------------------------------
 
 build-application:
   stage: build
@@ -32,7 +92,7 @@ build-application:
   artifacts:
     paths:
       - vendor/
-      - web/            # oder docroot/ je nach Projektstruktur
+      - web/            # or docroot/ depending on project structure
 
 unit-tests:
   stage: test
@@ -57,3 +117,6 @@ lint-phpcs:
     - vendor/bin/phpcs -q
   rules:
     - if: $ENABLE_PHPCS == "true"
+
+# Tip: use a local devsecops.yml wrapper to pin the template version once.
+# See "Local Include Pattern" in the README for a step-by-step guide.

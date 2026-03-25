@@ -1,7 +1,27 @@
 ---
+# =============================================================================
+# Node.js / Nuxt Application — DevSecOps Pipeline
+# =============================================================================
+#
+# What this demonstrates:
+#   Full CI/CD pipeline for a Node.js (Nuxt) app with specialized security
+#   scanning, DAST against staging, GitOps deployment, and optional AI reports.
+#
+# Prerequisites:
+#   - Node.js project with pnpm lockfile (pnpm-lock.yaml)
+#   - GitOps repository for deployments
+#
+# Required CI/CD secrets:
+#   - GITOPS_SSH_KEY          — SSH key for pushing to GitOps repo
+#   - DTRACK_API_KEY          — (optional) Dependency-Track API key
+#   - AI_API_KEY              — (optional) Gemini or OpenAI API key
+#   - SLACK_WEBHOOK_URL       — (optional) Slack incoming webhook URL
+#
+# =============================================================================
+
 include:
-  - project: platform/devsecops-template
-    ref: v1.0.0
+  - project: components/dev-sec-ops
+    ref: v1.0.2
     file:
       - /templates/gitlab/base.yml
       - /templates/gitlab/security/secrets.yml
@@ -12,33 +32,59 @@ include:
       - /templates/gitlab/deploy-production.yml
       - /templates/gitlab/monitor.yml
       - /templates/gitlab/ai-report.yml           # Optional: AI pipeline analysis + Slack
+      # - /templates/gitlab/security/container.yml # Optional: container image scanning
+      # - /templates/gitlab/security/iac.yml       # Optional: IaC scanning (Terraform, K8s)
+      # - /templates/gitlab/security/dast.yml      # Optional: OWASP ZAP DAST
 
+# ---------------------------------------------------------------------------
+# Variables — tune scanning, deployment, and optional integrations
+# ---------------------------------------------------------------------------
 variables:
   APP_NAME: "nuxt-app"
   LANGUAGE: "node"
   NODE_VERSION: "20"
   PACKAGE_MANAGER: "pnpm"          # npm|yarn|pnpm
 
+  # --- Security scanner selection -----------------------------------------
   # Use specialized tools for comprehensive JavaScript/TypeScript analysis
   SECURITY_SCANNER: "specialized"
   SAST_TOOL: "semgrep"             # Semgrep has excellent JS/TS rules
 
+  # --- Security policy & error handling ------------------------------------
+  # SECURITY_POLICY: "permissive"  # Start permissive, switch to "strict" once triaged
+  # TRIVY_EXIT_CODE: "0"           # "0" = warn only, "1" = fail pipeline on findings
+  # TRIVY_SEVERITY: "CRITICAL,HIGH" # Severity levels to report
+  # TRIVY_IGNORE_UNFIXED: "true"   # Ignore vulnerabilities without a fix
+
+  # --- DAST ---------------------------------------------------------------
   ENABLE_DAST: "true"
   STAGING_URL: "https://staging.example.com"
+
+  # --- GitOps deployment --------------------------------------------------
   GITOPS_REPO: "git@gitlab.example.com:gitops/nuxt-app.git"
+  # GITOPS_PATH: "values.yaml"
+  # GITOPS_IMAGE_TAG_YQ_PATH: ".image.tag"
 
-  # Dependency-Track SBOM upload (optional)
-  ENABLE_DTRACK: "false"  # Set to "true" and configure DTRACK_URL + DTRACK_API_KEY to enable
+  # --- Container scanning (optional) --------------------------------------
+  # ENABLE_CONTAINER_SCAN: "true"
+  # IMAGE_NAME: "${CI_REGISTRY_IMAGE}"
+  # IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
+
+  # --- Dependency-Track SBOM upload (optional) ----------------------------
+  ENABLE_DTRACK: "false"           # Set to "true" and configure below to enable
   # DTRACK_URL: "https://api.dtrack.example.com"
-  # DTRACK_API_KEY: "${DTRACK_API_KEY}"  # Set as CI/CD secret variable
+  # DTRACK_API_KEY: "${DTRACK_API_KEY}"  # CI/CD secret
 
-  # AI-powered pipeline analysis + Slack notifications (optional)
-  ENABLE_AI_REPORT: "false"  # Set to "true" and configure AI_API_KEY + SLACK_WEBHOOK_URL
-  # AI_PROVIDER: "gemini"   # or "openai" (default: "gemini")
+  # --- AI-powered pipeline analysis (optional) ----------------------------
+  ENABLE_AI_REPORT: "false"        # Set to "true" and configure below to enable
+  # AI_PROVIDER: "gemini"          # or "openai" (default: "gemini")
   # AI_API_KEY: set as CI/CD secret (Gemini or OpenAI API key)
   # SLACK_WEBHOOK_URL: set as CI/CD secret (Slack incoming webhook)
 
-# Team-spezifische Implementierung via extends, ohne Template zu kopieren
+# ---------------------------------------------------------------------------
+# Custom jobs
+# ---------------------------------------------------------------------------
+
 build-application:
   stage: build
   image: node:${NODE_VERSION}-alpine
@@ -66,7 +112,7 @@ unit-tests:
     paths:
       - junit.xml
 
-# Optional: E2E gegen Staging (Phase 7-8)
+# Optional: E2E tests against staging
 e2e-tests:
   stage: test
   image: cypress/included:15.3.0
@@ -74,3 +120,6 @@ e2e-tests:
     - cypress run --config baseUrl=${STAGING_URL}
   rules:
     - if: $ENABLE_E2E == "true"
+
+# Tip: use a local devsecops.yml wrapper to pin the template version once.
+# See "Local Include Pattern" in the README for a step-by-step guide.

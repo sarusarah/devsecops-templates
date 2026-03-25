@@ -47,7 +47,7 @@ Choose your preferred AI provider:
 ```yaml
 # .gitlab-ci.yml
 include:
-  - project: platform/devsecops-template
+  - project: components/dev-sec-ops
     file:
       - /templates/gitlab/base.yml
       - /templates/gitlab/ai-report.yml
@@ -145,7 +145,7 @@ Deployment stages are **not** analyzed:
 
 ```yaml
 include:
-  - project: platform/devsecops-template
+  - project: components/dev-sec-ops
     file:
       - /templates/gitlab/base.yml
       - /templates/gitlab/build.yml

@@ -22,8 +22,8 @@ Upload Software Bill of Materials (SBOM) to Dependency-Track for centralized dep
 ```yaml
 # .gitlab-ci.yml
 include:
-  - project: platform/devsecops-template
-    ref: v1.0.1
+  - project: components/dev-sec-ops
+    ref: v1.0.2
     file:
       - /templates/gitlab/base.yml
       - /templates/gitlab/security/dtrack.yml
@@ -46,7 +46,7 @@ on:
 
 jobs:
   dtrack:
-    uses: platform/devsecops-template/.github/workflows/security-dtrack.yml@v1.0.1
+    uses: components/dev-sec-ops/.github/workflows/security-dtrack.yml@v1.0.2
     with:
       dtrack_url: "https://api.dtrack.example.com"
     secrets:
@@ -135,8 +135,8 @@ secrets:
 
 ```yaml
 include:
-  - project: platform/devsecops-template
-    ref: v1.0.1
+  - project: components/dev-sec-ops
+    ref: v1.0.2
     file:
       - /templates/gitlab/base.yml
       - /templates/gitlab/security/dtrack.yml
@@ -191,7 +191,7 @@ on:
 
 jobs:
   dtrack:
-    uses: platform/devsecops-template/.github/workflows/security-dtrack.yml@v1.0.1
+    uses: components/dev-sec-ops/.github/workflows/security-dtrack.yml@v1.0.2
     with:
       dtrack_url: ${{ vars.DTRACK_URL }}
     secrets:
@@ -215,7 +215,7 @@ on:
 
 jobs:
   dtrack:
-    uses: platform/devsecops-template/.github/workflows/security-dtrack.yml@v1.0.1
+    uses: components/dev-sec-ops/.github/workflows/security-dtrack.yml@v1.0.2
     with:
       dtrack_url: ${{ vars.DTRACK_URL }}
       dtrack_project_version: ${{ github.ref_name }}
@@ -234,7 +234,7 @@ on:
 
 jobs:
   dtrack:
-    uses: platform/devsecops-template/.github/workflows/security-dtrack.yml@v1.0.1
+    uses: components/dev-sec-ops/.github/workflows/security-dtrack.yml@v1.0.2
     with:
       dtrack_url: ${{ vars.DTRACK_URL }}
     secrets:
@@ -249,8 +249,8 @@ jobs:
 
 ```yaml
 include:
-  - project: platform/devsecops-template
-    ref: v1.0.1
+  - project: components/dev-sec-ops
+    ref: v1.0.2
     file:
       - /templates/gitlab/base.yml
       - /templates/gitlab/security/dtrack.yml
@@ -312,7 +312,7 @@ on:
 
 jobs:
   dtrack:
-    uses: platform/devsecops-template/.github/workflows/security-dtrack.yml@v1.0.1
+    uses: components/dev-sec-ops/.github/workflows/security-dtrack.yml@v1.0.2
     with:
       project_path: frontend
       dtrack_url: ${{ vars.DTRACK_URL }}
@@ -332,7 +332,7 @@ on:
 
 jobs:
   dtrack:
-    uses: platform/devsecops-template/.github/workflows/security-dtrack.yml@v1.0.1
+    uses: components/dev-sec-ops/.github/workflows/security-dtrack.yml@v1.0.2
     with:
       project_path: backend
       dtrack_url: ${{ vars.DTRACK_URL }}
@@ -613,6 +613,6 @@ DTrack upload always succeeds if API accepts SBOM. To fail based on vulnerabilit
 
 ## Getting Help
 
-- **Template Issues:** [GitHub Issues](https://github.com/platform/devsecops-template/issues)
+- **Template Issues:** [GitHub Issues](https://github.com/components/dev-sec-ops/issues)
 - **Dependency-Track Docs:** [docs.dependencytrack.org](https://docs.dependencytrack.org)
 - **Trivy SBOM Docs:** [aquasecurity.github.io/trivy](https://aquasecurity.github.io/trivy)

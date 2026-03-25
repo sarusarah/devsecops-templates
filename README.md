@@ -4,35 +4,119 @@ A comprehensive, enterprise-grade GitLab CI/CD template library implementing Dev
 
 ---
 
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [What's Included](#whats-included)
+- [Security Features](#security-features)
+- [Testing Your Pipeline Locally](#testing-your-pipeline-locally)
+- [Key Features](#key-features)
+  - [Flexible Configuration](#flexible-configuration)
+  - [GitOps Deployment](#gitops-deployment)
+- [Architecture](#architecture)
+  - [Pipeline Stages (OWASP SPVS Aligned)](#pipeline-stages-owasp-spvs-aligned)
+  - [Template Inheritance](#template-inheritance)
+- [Monorepo Support](#monorepo-support)
+- [Configuration Variables](#configuration-variables)
+  - [Container Scanning Configuration](#container-scanning-configuration)
+  - [Dependency-Track Integration](#dependency-track-integration)
+  - [AI-Powered Pipeline Reporting](#ai-powered-pipeline-reporting)
+- [Handling Security Findings](#handling-security-findings)
+  - [Security Policy Modes](#security-policy-modes)
+  - [Ignore Files](#ignore-files)
+  - [Pipeline Failure Control Variables](#pipeline-failure-control-variables)
+- [Integration Guide: Using a `devsecops.yml` Wrapper](#integration-guide-using-a-devsecopsyml-wrapper)
+- [Troubleshooting](#troubleshooting)
+
+---
+
 ## Quick Start
 
 ### Using The Templates
 
-Include the templates you need in your `.gitlab-ci.yml` and enable desired security scans:
+Include the templates you need in your `.gitlab-ci.yml`. Below is a full example with **every available template** and stage described:
+
 ```yaml
 # your-project/.gitlab-ci.yml
 include:
   - project: components/dev-sec-ops
-    #ref: v1.0.1
+    ref: v1.0.2
     file:
-      - /templates/gitlab/base.yml
-      - /templates/gitlab/security/secrets.yml
-      - /templates/gitlab/security/dependency.yml
-      - /templates/gitlab/security/sast.yml
-      - /templates/gitlab/security/dtrack.yml  # Optional: SBOM upload to Dependency-Track
+      # ── Core ────────────────────────────────────────────────────────────
+      - /templates/gitlab/base.yml              # Pipeline stages, rules, default variables
+
+      # ── Source stage — scan code before building ────────────────────────
+      - /templates/gitlab/security/secrets.yml   # Secrets detection (Gitleaks or Trivy)
+      - /templates/gitlab/security/dependency.yml # Dependency vulnerability scanning (SCA)
+      - /templates/gitlab/security/sast.yml      # Static Application Security Testing
+
+      # ── Build & Test stages — compile and verify ────────────────────────
+      # (no template needed — you define build-application and unit-tests yourself)
+
+      # ── Package stage — scan built artifacts ────────────────────────────
+      - /templates/gitlab/security/container.yml # Container image scanning (Trivy)
+      - /templates/gitlab/security/iac.yml       # Infrastructure-as-Code scanning (Terraform, K8s)
+      - /templates/gitlab/security/dtrack.yml    # Upload SBOM to Dependency-Track
+
+      # ── Stage & Deploy — GitOps deployment ──────────────────────────────
+      - /templates/gitlab/deploy-staging.yml     # Deploy to staging via GitOps
+      - /templates/gitlab/deploy-production.yml  # Deploy to production via GitOps (manual gate)
+
+      # ── Verify stage — test the running application ─────────────────────
+      - /templates/gitlab/security/dast.yml      # DAST with OWASP ZAP against staging
+
+      # ── Operate stage — post-deploy checks ──────────────────────────────
+      - /templates/gitlab/monitor.yml            # Health-check and availability monitoring
+
+      # ── Report stage — aggregate results ────────────────────────────────
+      - /templates/gitlab/report.yml             # Security summary + optional Mattermost notification
+
+      # ── AI stages — AI-powered analysis + Slack ─────────────────────────
+      - /templates/gitlab/ai-report.yml          # Gemini/OpenAI analysis → Slack summary
 
 variables:
-  LANGUAGE: "node"  # or python, php
+  LANGUAGE: "node"  # node | python | php | generic
+
+  # Security
+  SECURITY_SCANNER: "trivy"          # trivy | specialized
+  ENABLE_CONTAINER_SCAN: "true"
+  ENABLE_IAC_SCAN: "true"
   ENABLE_DAST: "true"
   STAGING_URL: "https://staging.example.com"
 
-  # Optional: Enable Dependency-Track integration
+  # Dependency-Track
   ENABLE_DTRACK: "true"
   DTRACK_URL: "https://api.dtrack.example.com"
-  DTRACK_API_KEY: "${DTRACK_API_KEY}"
+  DTRACK_API_KEY: "${DTRACK_API_KEY}"            # CI/CD secret
 
-# Your custom jobs here...
+  # GitOps deployment
+  GITOPS_REPO: "git@gitlab.example.com:gitops/myapp.git"
+
+  # AI reporting
+  ENABLE_AI_REPORT: "true"
+  # AI_API_KEY and SLACK_WEBHOOK_URL → set as CI/CD secrets
+
+# Your custom jobs here…
 ```
+
+#### Stage-by-Stage Overview
+
+| Stage | Template(s) | What Happens |
+|-------|-------------|--------------|
+| **source** | `secrets.yml`, `dependency.yml`, `sast.yml` | Scans source code for leaked secrets, vulnerable dependencies, and code-level security issues — runs **before** anything is built. |
+| **build** | _(your job)_ | Build your application. Define a `build-application` job with the image and commands for your stack. |
+| **test** | _(your job)_ | Run unit / integration tests. Define a `unit-tests` job that produces JUnit and coverage reports. |
+| **package** | `container.yml`, `iac.yml`, `dtrack.yml` | Scans the built container image for OS and app vulnerabilities, validates IaC manifests, and uploads the SBOM to Dependency-Track. |
+| **stage** | `deploy-staging.yml` | Deploys to the **staging** environment by updating the image tag in your GitOps repository. |
+| **verify** | `dast.yml` | Runs OWASP ZAP against the staging URL to detect runtime vulnerabilities (SQL injection, XSS, CSRF, etc.). |
+| **deploy** | `deploy-production.yml` | Deploys to **production** via GitOps — requires **manual approval** on the default branch. |
+| **operate** | `monitor.yml` | Runs health-check requests against the deployed application and reports availability. |
+| **report** | `report.yml` | Aggregates all security scan results into a single summary and optionally notifies Mattermost. |
+| **ai-analysis** | `ai-report.yml` | Sends each scan report to Gemini or OpenAI for individual analysis. |
+| **ai-summary** | `ai-report.yml` | Consolidates the AI analyses into one actionable summary and posts it to Slack. |
+
+> You don't need all templates — start with `base.yml` plus the security scans you want and add more as your pipeline matures. See the [examples/](examples/) directory for minimal per-language setups.
+
 ---
 
 ## What's Included
@@ -189,7 +273,7 @@ variables:
 
 ---
 
-##  Architecture
+## Architecture
 
 ### Pipeline Stages (OWASP SPVS Aligned)
 
@@ -279,8 +363,8 @@ The DevSecOps templates support monorepos with multiple projects in a single rep
 **GitLab CI (.gitlab-ci.yml):**
 ```yaml
 include:
-  - project: platform/devsecops-template
-    ref: v1.0.1
+  - project: components/dev-sec-ops
+    ref: v1.0.2
     file:
       - /templates/gitlab/base.yml
       - /templates/build.yml
@@ -335,13 +419,13 @@ on:
 
 jobs:
   build:
-    uses: platform/devsecops-template/.github/workflows/build-node.yml@v1.0.1
+    uses: components/dev-sec-ops/.github/workflows/build-node.yml@v1.0.2
     with:
       project_path: frontend
       node_version: '20'
 
   secrets:
-    uses: platform/devsecops-template/.github/workflows/security-secrets.yml@v1.0.1
+    uses: components/dev-sec-ops/.github/workflows/security-secrets.yml@v1.0.2
     with:
       project_path: frontend
     permissions:
@@ -445,7 +529,7 @@ The container scanning template scans Docker images for vulnerabilities using Tr
 
 ```yaml
 include:
-  - project: platform/devsecops-template
+  - project: components/dev-sec-ops
     file: /templates/gitlab/security/container.yml
 
 variables:
@@ -534,8 +618,8 @@ Upload Software Bill of Materials (SBOM) to Dependency-Track for centralized dep
 
 ```yaml
 include:
-  - project: platform/devsecops-template
-    ref: v1.0.1
+  - project: components/dev-sec-ops
+    ref: v1.0.2
     file:
       - /templates/gitlab/base.yml
       - /templates/gitlab/security/dtrack.yml
@@ -551,7 +635,7 @@ variables:
 ```yaml
 jobs:
   dtrack:
-    uses: platform/devsecops-template/.github/workflows/security-dtrack.yml@v1.0.1
+    uses: components/dev-sec-ops/.github/workflows/security-dtrack.yml@v1.0.2
     with:
       dtrack_url: "https://api.dtrack.example.com"
     secrets:
@@ -595,7 +679,7 @@ Automated pipeline analysis using Google Gemini with Slack notifications. Analyz
 
 ```yaml
 include:
-  - project: platform/devsecops-template
+  - project: components/dev-sec-ops
     file:
       - /templates/gitlab/base.yml
       - /templates/gitlab/ai-report.yml
@@ -633,6 +717,143 @@ jobs:
 ### Notifications
 ```yaml
 MATTERMOST_WEBHOOK_URL: "https://mattermost.com/hooks/xxx"
+```
+
+---
+
+## Handling Security Findings
+
+### Security Policy Modes
+
+The templates support two security policy modes that control how pipelines react to findings:
+
+| Mode | Behavior | When to Use |
+|------|----------|-------------|
+| `strict` (default) | Pipeline **fails** on any security finding | Production branches, merge requests |
+| `permissive` | Security jobs **warn** but do not block the pipeline on feature branches; still strict on main/MR | Early adoption, initial rollout |
+
+```yaml
+variables:
+  SECURITY_POLICY: "permissive"  # or "strict"
+```
+
+### Ignore Files
+
+Suppress known false positives by adding ignore files to your repository root:
+
+| Tool | Ignore File | Example Entry |
+|------|-------------|---------------|
+| Trivy | `.trivyignore` | `CVE-2024-12345` |
+| Gitleaks | `.gitleaksignore` | `test-fixtures/fake-secret.txt` |
+| Semgrep | `.semgrepignore` | `tests/` |
+
+### Pipeline Failure Control Variables
+
+Fine-tune which findings block the pipeline:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `TRIVY_EXIT_CODE` | `"1"` | `"0"` = warn only, `"1"` = fail on findings |
+| `TRIVY_SEVERITY` | `"CRITICAL,HIGH"` | Severity levels to report (`UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL`) |
+| `TRIVY_IGNORE_UNFIXED` | `"false"` | `"true"` = skip vulnerabilities without an available fix |
+
+### Recommended Approach
+
+1. **Start permissive** — set `SECURITY_POLICY: "permissive"` so pipelines keep running while you assess the findings
+2. **Triage** — review findings in the GitLab Security Dashboard, add genuine false positives to ignore files
+3. **Go strict** — once the backlog is clean, switch to `SECURITY_POLICY: "strict"` and set `TRIVY_EXIT_CODE: "1"` to enforce a clean gate
+
+---
+
+## Integration Guide: Using a `devsecops.yml` Wrapper
+
+The recommended way to add DevSecOps scanning to a project is through a local `devsecops.yml` wrapper file. This keeps the template version pinned in one place and your `.gitlab-ci.yml` focused on your app.
+
+### Step 1 — Create `devsecops.yml` in your repository root
+
+Pick the security templates you need. The base set covers secrets, dependencies, and SAST:
+
+```yaml
+# devsecops.yml
+include:
+  - project: components/dev-sec-ops
+    ref: v1.0.2
+    file:
+      - /templates/gitlab/base.yml
+      - /templates/gitlab/security/secrets.yml
+      - /templates/gitlab/security/dependency.yml
+      - /templates/gitlab/security/sast.yml
+      # Uncomment as needed:
+      # - /templates/gitlab/security/container.yml  # Container image scanning
+      # - /templates/gitlab/security/iac.yml        # IaC scanning (Terraform, K8s)
+      # - /templates/gitlab/security/dtrack.yml     # SBOM upload to Dependency-Track
+      # - /templates/gitlab/ai-report.yml           # AI analysis + Slack summary
+      # - /templates/gitlab/deploy-staging.yml      # GitOps staging deployment
+      # - /templates/gitlab/deploy-production.yml   # GitOps production deployment
+      # - /templates/gitlab/monitor.yml             # Post-deploy health checks
+```
+
+### Step 2 — Reference the wrapper from `.gitlab-ci.yml`
+
+```yaml
+# .gitlab-ci.yml
+include:
+  - local: devsecops.yml
+
+variables:
+  LANGUAGE: "node"           # node | python | php | generic
+  NODE_VERSION: "20"
+  PACKAGE_MANAGER: "pnpm"   # npm | yarn | pnpm
+
+build-application:
+  stage: build
+  image: node:${NODE_VERSION}-alpine
+  script:
+    - corepack enable
+    - pnpm install --frozen-lockfile
+    - pnpm build
+  artifacts:
+    paths:
+      - .output/
+
+unit-tests:
+  stage: test
+  image: node:${NODE_VERSION}-alpine
+  script:
+    - corepack enable
+    - pnpm install --frozen-lockfile
+    - pnpm test -- --ci
+```
+
+### Step 3 — Add CI/CD secrets (if using optional features)
+
+In **Settings > CI/CD > Variables**, add any secrets required by the templates you enabled:
+
+| Variable | When Needed |
+|----------|-------------|
+| `DTRACK_API_KEY` | Dependency-Track integration |
+| `AI_API_KEY` | AI pipeline analysis (Gemini or OpenAI key) |
+| `SLACK_WEBHOOK_URL` | Slack notifications for AI reports |
+| `GITOPS_SSH_KEY` | GitOps deployments |
+
+### Step 4 — Commit and push
+
+```bash
+git add devsecops.yml .gitlab-ci.yml
+git commit -m "Add DevSecOps security scanning"
+git push
+```
+
+The pipeline will now run secrets detection, dependency scanning, and SAST on every merge request and push to the default branch.
+
+### Upgrading
+
+To upgrade all templates, change the `ref:` in `devsecops.yml` — that's the only file you need to touch:
+
+```diff
+  - project: components/dev-sec-ops
+-   ref: v1.0.2
++   ref: v1.1.0
 ```
 
 ---
@@ -756,7 +977,7 @@ secrets-detection:frontend:
 **GitHub Actions:**
 ```yaml
 secrets:
-  uses: platform/devsecops-template/.github/workflows/security-secrets.yml@main
+  uses: components/dev-sec-ops/.github/workflows/security-secrets.yml@main
   with:
     project_path: frontend  # Must be set
 ```

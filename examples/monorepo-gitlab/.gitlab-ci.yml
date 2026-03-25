@@ -4,8 +4,8 @@
 
 include:
   # Include DevSecOps templates
-  - project: platform/devsecops-template
-    ref: main  # Use specific version tag in production (e.g., v1.0.1)
+  - project: components/dev-sec-ops
+    ref: main  # Use specific version tag in production (e.g., v1.0.2)
     file:
       - /templates/gitlab/base.yml
       - /templates/gitlab/build.yml
