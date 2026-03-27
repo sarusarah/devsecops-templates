@@ -8,9 +8,9 @@
 #
 # Quick Start:
 #   variables:
-#     ENABLE_DEPENDENCY_SCAN: "true"
+#     DEVSECOPS_ENABLE_DEPENDENCY_SCAN: "true"
 #     LANGUAGE: "node"  # or "python", "php"
-#     SECURITY_SCANNER: "trivy"  # or "specialized"
+#     DEVSECOPS_SECURITY_SCANNER: "trivy"  # or "specialized"
 #
 # Scanner Options:
 #   Trivy (Default):
@@ -27,11 +27,11 @@
 #     - More detailed language-specific insights
 #
 # Variables:
-#   ENABLE_DEPENDENCY_SCAN: "true"      # Enable dependency scanning (default: "true")
-#   SECURITY_SCANNER: "trivy"           # Scanner: "trivy" or "specialized" (default: "trivy")
+#   DEVSECOPS_ENABLE_DEPENDENCY_SCAN: "true"      # Enable dependency scanning (default: "true")
+#   DEVSECOPS_SECURITY_SCANNER: "trivy"           # Scanner: "trivy" or "specialized" (default: "trivy")
 #   LANGUAGE: "node"                    # Language: "node", "python", "php" (required for specialized)
-#   PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "backend")
-#   SECURITY_POLICY: "strict"           # Policy: "strict" or "permissive" (default: "strict")
+#   DEVSECOPS_PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "backend")
+#   DEVSECOPS_SECURITY_POLICY: "strict"           # Policy: "strict" or "permissive" (default: "strict")
 #
 # Supported Package Managers:
 #   Node.js: npm, yarn, pnpm (package.json, package-lock.json, yarn.lock, pnpm-lock.yaml)
@@ -41,9 +41,9 @@
 # Monorepo Support:
 #   Scan specific subdirectory:
 #   variables:
-#     PROJECT_PATH: "backend"
+#     DEVSECOPS_PROJECT_PATH: "backend"
 #     LANGUAGE: "python"
-#     ENABLE_DEPENDENCY_SCAN: "true"
+#     DEVSECOPS_ENABLE_DEPENDENCY_SCAN: "true"
 #
 # See Also:
 #   - https://aquasecurity.github.io/trivy/
@@ -65,9 +65,9 @@ dependency-scanning:
         --severity HIGH,CRITICAL \
         --format json \
         --output dependency-scan.json \
-        "${PROJECT_PATH:-.}"
+        "${DEVSECOPS_PROJECT_PATH:-.}"
   rules:
-    - if: '$ENABLE_DEPENDENCY_SCAN == "true" && $SECURITY_SCANNER == "trivy"'
+    - if: '$DEVSECOPS_ENABLE_DEPENDENCY_SCAN == "true" && $DEVSECOPS_SECURITY_SCANNER == "trivy"'
     - when: never
   artifacts:
     when: always
@@ -87,7 +87,7 @@ dependency-scanning-specialized:
     - apk add --no-cache bash curl jq python3 py3-pip nodejs npm php-cli php-phar php-openssl
     - |
       set -e
-      cd "${PROJECT_PATH:-.}"
+      cd "${DEVSECOPS_PROJECT_PATH:-.}"
       case "${LANGUAGE}" in
         php)
           curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
@@ -105,7 +105,7 @@ dependency-scanning-specialized:
           ;;
       esac
   rules:
-    - if: '$ENABLE_DEPENDENCY_SCAN == "true" && $SECURITY_SCANNER == "specialized"'
+    - if: '$DEVSECOPS_ENABLE_DEPENDENCY_SCAN == "true" && $DEVSECOPS_SECURITY_SCANNER == "specialized"'
     - when: never
   artifacts:
     when: always

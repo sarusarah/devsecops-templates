@@ -10,7 +10,7 @@
 #   variables:
 #     GITOPS_REPO: "git@gitlab.example.com:gitops/myapp.git"
 #     GITOPS_SSH_KEY: "${GITOPS_SSH_KEY}"  # Set as CI/CD secret
-#     PRODUCTION_URL: "https://example.com"
+#     DEVSECOPS_PRODUCTION_URL: "https://example.com"
 #     GITOPS_PRODUCTION_PATH: "production/values.yaml"
 #
 # How It Works:
@@ -27,8 +27,8 @@
 #   GITOPS_PRODUCTION_BRANCH: ""        # Optional: Production branch name
 #   GITOPS_IMAGE_TAG_YQ_PATH: ".image.tag"  # YQ path to image tag field
 #   GITOPS_PRODUCTION_COMMIT_MESSAGE: ""    # Commit message template
-#   IMAGE_TAG: ""                       # Image tag to deploy (default: CI_COMMIT_SHA)
-#   PRODUCTION_URL: ""                  # Production environment URL
+#   DEVSECOPS_IMAGE_TAG: ""                       # Image tag to deploy (default: CI_COMMIT_SHA)
+#   DEVSECOPS_PRODUCTION_URL: ""                  # Production environment URL
 #
 # Safety Features:
 #   Manual Approval Required:
@@ -67,7 +67,7 @@
 # Environment Integration:
 #   Creates GitLab environment:
 #     - Name: production
-#     - URL: PRODUCTION_URL
+#     - URL: DEVSECOPS_PRODUCTION_URL
 #     - Deployment tier: production
 #   Visible in GitLab Environments page
 #   Supports deployment history and rollbacks
@@ -77,7 +77,7 @@
 #   deploy-production:
 #     extends: .deploy:production:base
 #     variables:
-#       IMAGE_TAG: "${STAGING_IMAGE_TAG}"
+#       DEVSECOPS_IMAGE_TAG: "${STAGING_IMAGE_TAG}"
 #
 #   Production-specific config:
 #   deploy-production:
@@ -100,7 +100,7 @@
 #
 #   Or redeploy previous version:
 #   1. Find previous commit SHA
-#   2. Manually run pipeline with IMAGE_TAG set
+#   2. Manually run pipeline with DEVSECOPS_IMAGE_TAG set
 #
 # Troubleshooting:
 #   "GITOPS_REPO is required":
@@ -130,8 +130,8 @@
         echo "GITOPS_REPO is required (e.g., git@gitlab.example.com:gitops/app.git)"
         exit 1
       fi
-      if [ -z "${PRODUCTION_URL}" ]; then
-        echo "Warning: PRODUCTION_URL not set"
+      if [ -z "${DEVSECOPS_PRODUCTION_URL}" ]; then
+        echo "Warning: DEVSECOPS_PRODUCTION_URL not set"
       fi
       # Setup SSH key for GitOps repo
       if [ -n "${GITOPS_SSH_KEY}" ]; then
@@ -158,7 +158,7 @@
       git config user.name "GitLab CI"
 
       # Update image tag in values file
-      IMAGE_TAG_VALUE="${IMAGE_TAG:-$CI_COMMIT_SHA}"
+      IMAGE_TAG_VALUE="${DEVSECOPS_IMAGE_TAG:-$CI_COMMIT_SHA}"
       GITOPS_FILE="${GITOPS_PRODUCTION_PATH:-${GITOPS_PATH:-values.yaml}}"
       YQ_PATH="${GITOPS_IMAGE_TAG_YQ_PATH:-.image.tag}"
 
@@ -184,10 +184,10 @@
     - when: never
   environment:
     name: production
-    url: ${PRODUCTION_URL}
+    url: ${DEVSECOPS_PRODUCTION_URL}
     deployment_tier: production
 
 deploy-production:
   extends: .deploy:production:base
   variables:
-    IMAGE_TAG: ${CI_COMMIT_SHA}
+    DEVSECOPS_IMAGE_TAG: ${CI_COMMIT_SHA}

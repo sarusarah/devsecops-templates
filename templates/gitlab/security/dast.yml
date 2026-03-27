@@ -8,9 +8,9 @@
 #
 # Quick Start:
 #   variables:
-#     ENABLE_DAST: "true"
-#     STAGING_URL: "https://staging.example.com"
-#     SECURITY_POLICY: "strict"  # or "permissive"
+#     DEVSECOPS_ENABLE_DAST: "true"
+#     DEVSECOPS_STAGING_URL: "https://staging.example.com"
+#     DEVSECOPS_SECURITY_POLICY: "strict"  # or "permissive"
 #
 # How It Works:
 #   1. Deploys application to staging environment
@@ -19,9 +19,9 @@
 #   4. Generates report with findings
 #
 # Variables:
-#   ENABLE_DAST: "true"                 # Enable DAST scanning (default: "false")
-#   STAGING_URL: ""                     # Required: URL of deployed staging environment
-#   SECURITY_POLICY: "strict"           # Policy: "strict" (fail on alerts) or "permissive" (default: "strict")
+#   DEVSECOPS_ENABLE_DAST: "true"                 # Enable DAST scanning (default: "false")
+#   DEVSECOPS_STAGING_URL: ""                     # Required: URL of deployed staging environment
+#   DEVSECOPS_SECURITY_POLICY: "strict"           # Policy: "strict" (fail on alerts) or "permissive" (default: "strict")
 #
 # Security Policy Modes:
 #   strict:
@@ -68,25 +68,25 @@ dast-zap:
   cache: {}
   script:
     - |
-      if [ -z "${STAGING_URL}" ]; then
-        echo "STAGING_URL is required for DAST."
+      if [ -z "${DEVSECOPS_STAGING_URL}" ]; then
+        echo "DEVSECOPS_STAGING_URL is required for DAST."
         exit 2
       fi
       mkdir -p zap
       # Run ZAP baseline scan - exit code 2 means warnings, 1 means alerts found
       set +e
-      zap-baseline.py -t "${STAGING_URL}" -J zap/zap.json -r zap/zap.html
+      zap-baseline.py -t "${DEVSECOPS_STAGING_URL}" -J zap/zap.json -r zap/zap.html
       ZAP_EXIT_CODE=$?
       set -e
 
-      # Allow warnings (exit 2) but fail on alerts (exit 1) if SECURITY_POLICY is strict
-      if [ "$SECURITY_POLICY" = "strict" ] && [ $ZAP_EXIT_CODE -eq 1 ]; then
+      # Allow warnings (exit 2) but fail on alerts (exit 1) if DEVSECOPS_SECURITY_POLICY is strict
+      if [ "$DEVSECOPS_SECURITY_POLICY" = "strict" ] && [ $ZAP_EXIT_CODE -eq 1 ]; then
         echo "DAST found security alerts in strict mode"
         exit 1
       fi
       exit 0
   rules:
-    - if: '$ENABLE_DAST == "true"'
+    - if: '$DEVSECOPS_ENABLE_DAST == "true"'
     - when: never
   allow_failure: false
   artifacts:

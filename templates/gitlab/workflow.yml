@@ -15,21 +15,21 @@
 #   2. Always run on default branch (main/master)
 #   3. Always run on tags/releases
 #   4. Always run on scheduled pipelines (weekly security scans)
-#   5. Run on other branches only if RUN_ON_BRANCHES="true"
+#   5. Run on other branches only if DEVSECOPS_RUN_ON_BRANCHES="true"
 #   6. Never run otherwise (prevents duplicate pipelines)
 #
 # Variables:
-#   RUN_ON_BRANCHES: "false"            # Enable pipelines on all branches (default: "false")
+#   DEVSECOPS_RUN_ON_BRANCHES: "false"            # Enable pipelines on all branches (default: "false")
 #
 # Behavior:
-#   Default (RUN_ON_BRANCHES="false"):
+#   Default (DEVSECOPS_RUN_ON_BRANCHES="false"):
 #     - Merge requests: Pipeline runs
 #     - Main/master branch: Pipeline runs
 #     - Scheduled pipelines: Pipeline runs (security scans)
 #     - Feature branches: No pipeline
 #     - Tags: Pipeline runs
 #
-#   With RUN_ON_BRANCHES="true":
+#   With DEVSECOPS_RUN_ON_BRANCHES="true":
 #     - All branches: Pipeline runs
 #     - Merge requests: Pipeline runs
 #     - Scheduled pipelines: Pipeline runs
@@ -73,6 +73,6 @@ workflow:
     - if: '$CI_COMMIT_TAG'
       when: always
     # Otherwise only if explicitly enabled
-    - if: '$RUN_ON_BRANCHES == "true"'
+    - if: '$DEVSECOPS_RUN_ON_BRANCHES == "true"'
       when: always
     - when: never

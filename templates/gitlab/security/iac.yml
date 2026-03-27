@@ -8,9 +8,9 @@
 #
 # Quick Start:
 #   variables:
-#     ENABLE_IAC_SCAN: "true"
-#     IAC_TARGET_DIR: "k8s"  # Directory containing IaC files
-#     SECURITY_SCANNER: "trivy"  # or "specialized"
+#     DEVSECOPS_ENABLE_IAC_SCAN: "true"
+#     DEVSECOPS_IAC_TARGET_DIR: "k8s"  # Directory containing IaC files
+#     DEVSECOPS_SECURITY_SCANNER: "trivy"  # or "specialized"
 #
 # Scanner Options:
 #   Trivy (Default):
@@ -26,11 +26,11 @@
 #     - Best for Kubernetes-specific validation
 #
 # Variables:
-#   ENABLE_IAC_SCAN: "true"             # Enable IaC scanning (default: "false")
-#   SECURITY_SCANNER: "trivy"           # Scanner: "trivy" or "specialized" (default: "trivy")
-#   IAC_TARGET_DIR: "k8s"               # Directory with IaC files (default: "k8s")
-#   PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "infra")
-#   SECURITY_POLICY: "strict"           # Policy: "strict" or "permissive" (default: "strict")
+#   DEVSECOPS_ENABLE_IAC_SCAN: "true"             # Enable IaC scanning (default: "false")
+#   DEVSECOPS_SECURITY_SCANNER: "trivy"           # Scanner: "trivy" or "specialized" (default: "trivy")
+#   DEVSECOPS_IAC_TARGET_DIR: "k8s"               # Directory with IaC files (default: "k8s")
+#   DEVSECOPS_PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "infra")
+#   DEVSECOPS_SECURITY_POLICY: "strict"           # Policy: "strict" or "permissive" (default: "strict")
 #
 # Supported IaC Formats:
 #   Trivy: Kubernetes, Terraform, CloudFormation, Dockerfile, Helm, Kustomize
@@ -46,9 +46,9 @@
 # Monorepo Support:
 #   Scan specific infrastructure directory:
 #   variables:
-#     PROJECT_PATH: "services/api"
-#     IAC_TARGET_DIR: "k8s"
-#     ENABLE_IAC_SCAN: "true"
+#     DEVSECOPS_PROJECT_PATH: "services/api"
+#     DEVSECOPS_IAC_TARGET_DIR: "k8s"
+#     DEVSECOPS_ENABLE_IAC_SCAN: "true"
 #   # Scans: services/api/k8s/
 #
 # See Also:
@@ -68,9 +68,9 @@ iac-security:
   script:
     - trivy --version
     - |
-      TARGET_DIR="${PROJECT_PATH:-.}/${IAC_TARGET_DIR:-k8s}"
+      TARGET_DIR="${DEVSECOPS_PROJECT_PATH:-.}/${DEVSECOPS_IAC_TARGET_DIR:-k8s}"
       if [ ! -d "${TARGET_DIR}" ]; then
-        echo "No IaC target dir '${TARGET_DIR}' found. Set IAC_TARGET_DIR or disable ENABLE_IAC_SCAN."
+        echo "No IaC target dir '${TARGET_DIR}' found. Set DEVSECOPS_IAC_TARGET_DIR or disable DEVSECOPS_ENABLE_IAC_SCAN."
         exit 0
       fi
       trivy config \
@@ -79,7 +79,7 @@ iac-security:
         --output iac-report.json \
         "${TARGET_DIR}"
   rules:
-    - if: '$ENABLE_IAC_SCAN == "true" && $SECURITY_SCANNER == "trivy"'
+    - if: '$DEVSECOPS_ENABLE_IAC_SCAN == "true" && $DEVSECOPS_SECURITY_SCANNER == "trivy"'
     - when: never
   artifacts:
     when: always
@@ -103,16 +103,16 @@ iac-security-specialized:
     - chmod +x /usr/local/bin/polaris
     - |
       set -e
-      TARGET_DIR="${PROJECT_PATH:-.}/${IAC_TARGET_DIR:-k8s}"
+      TARGET_DIR="${DEVSECOPS_PROJECT_PATH:-.}/${DEVSECOPS_IAC_TARGET_DIR:-k8s}"
       if [ ! -d "${TARGET_DIR}" ]; then
-        echo "No IaC target dir '${TARGET_DIR}' found. Set IAC_TARGET_DIR or disable ENABLE_IAC_SCAN."
+        echo "No IaC target dir '${TARGET_DIR}' found. Set DEVSECOPS_IAC_TARGET_DIR or disable DEVSECOPS_ENABLE_IAC_SCAN."
         exit 0
       fi
       kubeconform -summary -strict "${TARGET_DIR}" || true
       find "${TARGET_DIR}" -name '*.yaml' -o -name '*.yml' | head -n 50 | xargs -I{} sh -c 'kubescore score "{}" || true'
       polaris audit --audit-path "${TARGET_DIR}" --format json > polaris.json || true
   rules:
-    - if: '$ENABLE_IAC_SCAN == "true" && $SECURITY_SCANNER == "specialized"'
+    - if: '$DEVSECOPS_ENABLE_IAC_SCAN == "true" && $DEVSECOPS_SECURITY_SCANNER == "specialized"'
     - when: never
   artifacts:
     when: always

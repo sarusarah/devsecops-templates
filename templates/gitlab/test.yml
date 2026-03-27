@@ -29,18 +29,18 @@
 # Variables - Node.js:
 #   NODE_VERSION: "20"                  # Node.js version (default: "20")
 #   PACKAGE_MANAGER: "npm"              # Package manager: "npm", "yarn", "pnpm" (default: "npm")
-#   PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "frontend")
+#   DEVSECOPS_PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "frontend")
 #
 # Variables - Python:
 #   PYTHON_VERSION: "3.12"              # Python version (default: "3.12")
-#   PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "backend")
+#   DEVSECOPS_PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "backend")
 #
 # Variables - PHP:
 #   PHP_VERSION: "8.3"                  # PHP version (default: "8.3")
-#   PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "api")
+#   DEVSECOPS_PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "api")
 #
 # Variables - Pipeline Control:
-#   RUN_ON_BRANCHES: "false"            # Run on all branches or MR/main only (default: "false")
+#   DEVSECOPS_RUN_ON_BRANCHES: "false"            # Run on all branches or MR/main only (default: "false")
 #
 # Test Frameworks:
 #   Node.js: Automatically detects and runs configured test runner (Jest, Vitest, etc.)
@@ -63,7 +63,7 @@
 #   test-frontend:
 #     extends: .test:node
 #     variables:
-#       PROJECT_PATH: "frontend"
+#       DEVSECOPS_PROJECT_PATH: "frontend"
 #       PACKAGE_MANAGER: "pnpm"
 #
 # Custom Test Commands:
@@ -84,7 +84,7 @@
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
-    - if: '$RUN_ON_BRANCHES == "true"'
+    - if: '$DEVSECOPS_RUN_ON_BRANCHES == "true"'
   artifacts:
     when: always
     expire_in: 7 days
@@ -93,7 +93,7 @@
   extends: .test:base
   image: node:${NODE_VERSION:-20}-alpine
   before_script:
-    - cd "${PROJECT_PATH:-.}"
+    - cd "${DEVSECOPS_PROJECT_PATH:-.}"
   script:
     - corepack enable
     - |
@@ -112,7 +112,7 @@
   extends: .test:base
   image: python:${PYTHON_VERSION:-3.12}-slim
   before_script:
-    - cd "${PROJECT_PATH:-.}"
+    - cd "${DEVSECOPS_PROJECT_PATH:-.}"
   script:
     - python -m pip install -U pip
     - pip install pytest pytest-cov
@@ -121,19 +121,19 @@
       pytest -q --junitxml=junit.xml --cov=. --cov-report=xml:coverage.xml
   artifacts:
     reports:
-      junit: ${PROJECT_PATH:-.}/junit.xml
+      junit: ${DEVSECOPS_PROJECT_PATH:-.}/junit.xml
       coverage_report:
         coverage_format: cobertura
-        path: ${PROJECT_PATH:-.}/coverage.xml
+        path: ${DEVSECOPS_PROJECT_PATH:-.}/coverage.xml
     paths:
-      - ${PROJECT_PATH:-.}/junit.xml
-      - ${PROJECT_PATH:-.}/coverage.xml
+      - ${DEVSECOPS_PROJECT_PATH:-.}/junit.xml
+      - ${DEVSECOPS_PROJECT_PATH:-.}/coverage.xml
 
 .test:phpunit:
   extends: .test:base
   image: php:${PHP_VERSION:-8.3}-cli
   before_script:
-    - cd "${PROJECT_PATH:-.}"
+    - cd "${DEVSECOPS_PROJECT_PATH:-.}"
     - php -v
     - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
     - |
@@ -155,6 +155,6 @@
     reports:
       coverage_report:
         coverage_format: cobertura
-        path: ${PROJECT_PATH:-.}/coverage.xml
+        path: ${DEVSECOPS_PROJECT_PATH:-.}/coverage.xml
     paths:
-      - ${PROJECT_PATH:-.}/coverage.xml
+      - ${DEVSECOPS_PROJECT_PATH:-.}/coverage.xml

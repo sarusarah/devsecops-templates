@@ -8,31 +8,31 @@
 #
 # Quick Start:
 #   variables:
-#     ENABLE_CONTAINER_SCAN: "true"
-#     IMAGE_TAG: "latest"  # Must match your build tag
+#     DEVSECOPS_ENABLE_CONTAINER_SCAN: "true"
+#     DEVSECOPS_IMAGE_TAG: "latest"  # Must match your build tag
 #
 # Multi-Environment Images:
 #   For projects with staging/prod images (e.g., myapp/staging:latest, myapp/prod:latest):
 #   variables:
-#     CONTAINER_IMAGE_SUFFIX: "staging"  # Scans IMAGE_NAME/staging:TAG
+#     DEVSECOPS_CONTAINER_IMAGE_SUFFIX: "staging"  # Scans DEVSECOPS_IMAGE_NAME/staging:TAG
 #
 # Variables:
-#   ENABLE_CONTAINER_SCAN: "true"       # Enable container scanning (default: "false")
-#   IMAGE_NAME: ""                      # Image repository (default: CI_REGISTRY_IMAGE)
-#   IMAGE_TAG: ""                       # Image tag to scan (default: CI_COMMIT_SHORT_SHA)
-#   CONTAINER_IMAGE_SUFFIX: ""          # Optional: Sub-image path (e.g., "staging")
-#   TRIVY_SEVERITY: ""                  # Severities to report (default: "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL")
-#   TRIVY_EXIT_CODE: "0"                # Exit code on vulnerabilities: "0" (warn) or "1" (fail)
-#   TRIVY_NON_SSL: "false"              # Allow insecure registries (default: "false")
-#   TRIVY_SCANNERS: ""                  # Scanners to use (default: "vuln,secret")
-#   TRIVY_IGNOREFILE: ""                # Path to .trivyignore file (default: none)
-#   TRIVY_IGNORE_UNFIXED: "false"       # Ignore vulnerabilities without a fix (default: "false")
+#   DEVSECOPS_ENABLE_CONTAINER_SCAN: "true"       # Enable container scanning (default: "false")
+#   DEVSECOPS_IMAGE_NAME: ""                      # Image repository (default: CI_REGISTRY_IMAGE)
+#   DEVSECOPS_IMAGE_TAG: ""                       # Image tag to scan (default: CI_COMMIT_SHORT_SHA)
+#   DEVSECOPS_CONTAINER_IMAGE_SUFFIX: ""          # Optional: Sub-image path (e.g., "staging")
+#   DEVSECOPS_TRIVY_SEVERITY: ""                  # Severities to report (default: "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL")
+#   DEVSECOPS_TRIVY_EXIT_CODE: "0"                # Exit code on vulnerabilities: "0" (warn) or "1" (fail)
+#   DEVSECOPS_TRIVY_NON_SSL: "false"              # Allow insecure registries (default: "false")
+#   DEVSECOPS_TRIVY_SCANNERS: ""                  # Scanners to use (default: "vuln,secret")
+#   DEVSECOPS_TRIVY_IGNOREFILE: ""                # Path to .trivyignore file (default: none)
+#   DEVSECOPS_TRIVY_IGNORE_UNFIXED: "false"       # Ignore vulnerabilities without a fix (default: "false")
 #
 # Image Reference Construction:
-#   Final image: ${IMAGE_NAME}/${CONTAINER_IMAGE_SUFFIX}:${IMAGE_TAG}
+#   Final image: ${DEVSECOPS_IMAGE_NAME}/${DEVSECOPS_CONTAINER_IMAGE_SUFFIX}:${DEVSECOPS_IMAGE_TAG}
 #   Examples:
 #     - registry/project:abc123 (default)
-#     - registry/project/staging:latest (with CONTAINER_IMAGE_SUFFIX="staging")
+#     - registry/project/staging:latest (with DEVSECOPS_CONTAINER_IMAGE_SUFFIX="staging")
 #     - docker.io/org/app:v1.0.0 (external registry)
 #
 # Registry Authentication:
@@ -44,7 +44,7 @@
 #   container-security-scan:frontend:
 #     extends: container-security-scan
 #     variables:
-#       CONTAINER_IMAGE_SUFFIX: "frontend"
+#       DEVSECOPS_CONTAINER_IMAGE_SUFFIX: "frontend"
 #
 # See Also:
 #   - Complete guide: docs/CONTAINER_SCANNING.md
@@ -61,48 +61,48 @@ container-security-scan:
       # Authenticate with container registry for remote scanning
       export TRIVY_USERNAME="${CI_REGISTRY_USER:-gitlab-ci-token}"
       export TRIVY_PASSWORD="${CI_REGISTRY_PASSWORD:-$CI_JOB_TOKEN}"
-      export TRIVY_NON_SSL="false"
+      export DEVSECOPS_TRIVY_NON_SSL="false"
   script:
     - trivy --version
     - |
-      IMAGE_REPO="${IMAGE_NAME:-$CI_REGISTRY_IMAGE}"
-      IMAGE_TAG="${IMAGE_TAG:-$CI_COMMIT_SHORT_SHA}"
+      IMAGE_REPO="${DEVSECOPS_IMAGE_NAME:-$CI_REGISTRY_IMAGE}"
+      DEVSECOPS_IMAGE_TAG="${DEVSECOPS_IMAGE_TAG:-$CI_COMMIT_SHORT_SHA}"
 
       # Support scanning sub-images (e.g., CI_REGISTRY_IMAGE/staging or CI_REGISTRY_IMAGE/prod)
-      if [ -n "$CONTAINER_IMAGE_SUFFIX" ]; then
-        IMAGE_REPO="${IMAGE_REPO}/${CONTAINER_IMAGE_SUFFIX}"
+      if [ -n "$DEVSECOPS_CONTAINER_IMAGE_SUFFIX" ]; then
+        IMAGE_REPO="${IMAGE_REPO}/${DEVSECOPS_CONTAINER_IMAGE_SUFFIX}"
       fi
 
-      IMAGE_REF="${IMAGE_REPO}:${IMAGE_TAG}"
+      IMAGE_REF="${IMAGE_REPO}:${DEVSECOPS_IMAGE_TAG}"
 
       echo "================================================"
       echo "Scanning container image for vulnerabilities"
       echo "Registry: ${IMAGE_REPO}"
-      echo "Tag: ${IMAGE_TAG}"
+      echo "Tag: ${DEVSECOPS_IMAGE_TAG}"
       echo "Full reference: ${IMAGE_REF}"
       echo "================================================"
 
       # Build common Trivy flags
-      TRIVY_COMMON_FLAGS="--severity ${TRIVY_SEVERITY:-UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL}"
+      TRIVY_COMMON_FLAGS="--severity ${DEVSECOPS_TRIVY_SEVERITY:-UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL}"
       TRIVY_COMMON_FLAGS="${TRIVY_COMMON_FLAGS} --image-src remote"
-      TRIVY_COMMON_FLAGS="${TRIVY_COMMON_FLAGS} --insecure=${TRIVY_NON_SSL}"
+      TRIVY_COMMON_FLAGS="${TRIVY_COMMON_FLAGS} --insecure=${DEVSECOPS_TRIVY_NON_SSL}"
 
-      if [ -n "${TRIVY_SCANNERS}" ]; then
-        TRIVY_COMMON_FLAGS="${TRIVY_COMMON_FLAGS} --scanners ${TRIVY_SCANNERS}"
+      if [ -n "${DEVSECOPS_TRIVY_SCANNERS}" ]; then
+        TRIVY_COMMON_FLAGS="${TRIVY_COMMON_FLAGS} --scanners ${DEVSECOPS_TRIVY_SCANNERS}"
       fi
 
-      if [ -n "${TRIVY_IGNOREFILE}" ] && [ -f "${TRIVY_IGNOREFILE}" ]; then
-        TRIVY_COMMON_FLAGS="${TRIVY_COMMON_FLAGS} --ignorefile ${TRIVY_IGNOREFILE}"
+      if [ -n "${DEVSECOPS_TRIVY_IGNOREFILE}" ] && [ -f "${DEVSECOPS_TRIVY_IGNOREFILE}" ]; then
+        TRIVY_COMMON_FLAGS="${TRIVY_COMMON_FLAGS} --ignorefile ${DEVSECOPS_TRIVY_IGNOREFILE}"
       fi
 
-      if [ "${TRIVY_IGNORE_UNFIXED}" = "true" ]; then
+      if [ "${DEVSECOPS_TRIVY_IGNORE_UNFIXED}" = "true" ]; then
         TRIVY_COMMON_FLAGS="${TRIVY_COMMON_FLAGS} --ignore-unfixed"
       fi
 
       # Use remote scanning since docker daemon is not available in GitLab CI
       trivy image \
         ${TRIVY_COMMON_FLAGS} \
-        --exit-code "${TRIVY_EXIT_CODE:-0}" \
+        --exit-code "${DEVSECOPS_TRIVY_EXIT_CODE:-0}" \
         --format json \
         --output trivy.json \
         "${IMAGE_REF}"
@@ -116,7 +116,7 @@ container-security-scan:
         --format table \
         "${IMAGE_REF}"
   rules:
-    - if: '$ENABLE_CONTAINER_SCAN == "true"'
+    - if: '$DEVSECOPS_ENABLE_CONTAINER_SCAN == "true"'
     - when: never
   allow_failure: false
   artifacts:

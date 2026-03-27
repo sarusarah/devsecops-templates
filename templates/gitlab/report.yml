@@ -8,11 +8,11 @@
 #
 # Quick Start:
 #   Automatically runs after pipeline completes
-#   Optional: Set MATTERMOST_WEBHOOK_URL for notifications
+#   Optional: Set DEVSECOPS_SLACK_WEBHOOK_URL for notifications
 #
 # Variables:
-#   MATTERMOST_WEBHOOK_URL: ""          # Optional: Mattermost webhook for notifications
-#   SECURITY_SCANNER: "trivy"           # Scanner type (automatically set by base.yml)
+#   DEVSECOPS_SLACK_WEBHOOK_URL: ""          # Optional: Mattermost webhook for notifications
+#   DEVSECOPS_SECURITY_SCANNER: "trivy"           # Scanner type (automatically set by base.yml)
 #
 # Generated Reports:
 #   Creates summary.md with:
@@ -52,7 +52,7 @@
 # Notification Integration:
 #   Mattermost:
 #     1. Create incoming webhook in Mattermost
-#     2. Set MATTERMOST_WEBHOOK_URL as CI/CD variable
+#     2. Set DEVSECOPS_SLACK_WEBHOOK_URL as CI/CD variable
 #     3. Report automatically sent on pipeline completion
 #
 #   Example webhook URL:
@@ -90,7 +90,7 @@ reporting:
       echo "- **Branch**: ${CI_COMMIT_REF_NAME}" >> summary.md
       echo "- **Pipeline**: ${CI_PIPELINE_URL}" >> summary.md
       echo "- **Date**: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> summary.md
-      echo "- **Security Scanner**: ${SECURITY_SCANNER}" >> summary.md
+      echo "- **Security Scanner**: ${DEVSECOPS_SECURITY_SCANNER}" >> summary.md
       echo "" >> summary.md
 
       # Track if any critical issues found
@@ -127,11 +127,11 @@ reporting:
       fi
 
       # Optional Mattermost webhook
-      if [ -n "${MATTERMOST_WEBHOOK_URL}" ]; then
+      if [ -n "${DEVSECOPS_SLACK_WEBHOOK_URL}" ]; then
         echo "Sending summary to Mattermost..."
         SUMMARY_TEXT=$(cat summary.md)
         payload=$(jq -n --arg text "$SUMMARY_TEXT" '{text: $text}')
-        curl -X POST -H "Content-Type: application/json" -d "$payload" "${MATTERMOST_WEBHOOK_URL}" || true
+        curl -X POST -H "Content-Type: application/json" -d "$payload" "${DEVSECOPS_SLACK_WEBHOOK_URL}" || true
       fi
   rules:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'

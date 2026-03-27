@@ -8,8 +8,8 @@
 #
 # Quick Start:
 #   variables:
-#     ENABLE_SAST: "true"
-#     SAST_TOOL: "semgrep"  # or "trivy"
+#     DEVSECOPS_ENABLE_SAST: "true"
+#     DEVSECOPS_SAST_TOOL: "semgrep"  # or "trivy"
 #
 # Tool Options:
 #   Semgrep (Recommended):
@@ -25,11 +25,11 @@
 #     - Better for infrastructure code
 #
 # Variables:
-#   ENABLE_SAST: "true"                 # Enable SAST scanning (default: "true")
-#   SAST_TOOL: "semgrep"                # Tool: "semgrep" or "trivy" (default: "semgrep")
-#   SECURITY_SCANNER: "specialized"     # Scanner mode (affects tool selection)
-#   PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "api")
-#   SECURITY_POLICY: "strict"           # Policy: "strict" or "permissive" (default: "strict")
+#   DEVSECOPS_ENABLE_SAST: "true"                 # Enable SAST scanning (default: "true")
+#   DEVSECOPS_SAST_TOOL: "semgrep"                # Tool: "semgrep" or "trivy" (default: "semgrep")
+#   DEVSECOPS_SECURITY_SCANNER: "specialized"     # Scanner mode (affects tool selection)
+#   DEVSECOPS_PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "api")
+#   DEVSECOPS_SECURITY_POLICY: "strict"           # Policy: "strict" or "permissive" (default: "strict")
 #
 # Supported Languages:
 #   Semgrep: JavaScript/TypeScript, Python, Java, Go, Ruby, PHP, C/C++, C#, Kotlin, Rust
@@ -38,9 +38,9 @@
 # Monorepo Support:
 #   Scan specific application:
 #   variables:
-#     PROJECT_PATH: "api"
-#     ENABLE_SAST: "true"
-#     SAST_TOOL: "semgrep"
+#     DEVSECOPS_PROJECT_PATH: "api"
+#     DEVSECOPS_ENABLE_SAST: "true"
+#     DEVSECOPS_SAST_TOOL: "semgrep"
 #
 # See Also:
 #   - https://semgrep.dev/
@@ -63,9 +63,9 @@ sast:
         --exit-code 0 \
         --format json \
         --output sast-report.json \
-        "${PROJECT_PATH:-.}"
+        "${DEVSECOPS_PROJECT_PATH:-.}"
   rules:
-    - if: '$ENABLE_SAST == "true" && ($SECURITY_SCANNER == "trivy" || $SAST_TOOL == "trivy")'
+    - if: '$DEVSECOPS_ENABLE_SAST == "true" && ($DEVSECOPS_SECURITY_SCANNER == "trivy" || $DEVSECOPS_SAST_TOOL == "trivy")'
     - when: never
   allow_failure: false
   artifacts:
@@ -84,9 +84,9 @@ sast-semgrep:
   cache: {}
   script:
     - semgrep --version
-    - semgrep scan --config p/security-audit --json -o semgrep.json "${PROJECT_PATH:-.}"
+    - semgrep scan --config p/security-audit --json -o semgrep.json "${DEVSECOPS_PROJECT_PATH:-.}"
   rules:
-    - if: '$ENABLE_SAST == "true" && ($SECURITY_SCANNER == "specialized" || $SAST_TOOL == "semgrep")'
+    - if: '$DEVSECOPS_ENABLE_SAST == "true" && ($DEVSECOPS_SECURITY_SCANNER == "specialized" || $DEVSECOPS_SAST_TOOL == "semgrep")'
     - when: never
   allow_failure: false
   artifacts:

@@ -29,18 +29,18 @@
 # Variables - Node.js:
 #   NODE_VERSION: "20"                  # Node.js version (default: "20")
 #   PACKAGE_MANAGER: "npm"              # Package manager: "npm", "yarn", "pnpm" (default: "npm")
-#   PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "frontend")
+#   DEVSECOPS_PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "frontend")
 #
 # Variables - Python:
 #   PYTHON_VERSION: "3.12"              # Python version (default: "3.12")
-#   PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "backend")
+#   DEVSECOPS_PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "backend")
 #
 # Variables - PHP:
 #   PHP_VERSION: "8.3"                  # PHP version (default: "8.3")
-#   PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "api")
+#   DEVSECOPS_PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "api")
 #
 # Variables - Pipeline Control:
-#   RUN_ON_BRANCHES: "false"            # Run on all branches or MR/main only (default: "false")
+#   DEVSECOPS_RUN_ON_BRANCHES: "false"            # Run on all branches or MR/main only (default: "false")
 #
 # Supported Package Managers:
 #   Node.js:
@@ -62,11 +62,11 @@
 #   Expiration: 1 day
 #
 # Monorepo Support:
-#   Set PROJECT_PATH to build specific component:
+#   Set DEVSECOPS_PROJECT_PATH to build specific component:
 #   build-frontend:
 #     extends: .build:node
 #     variables:
-#       PROJECT_PATH: "frontend"
+#       DEVSECOPS_PROJECT_PATH: "frontend"
 #       PACKAGE_MANAGER: "pnpm"
 #
 # Custom Build Steps:
@@ -83,7 +83,7 @@
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
-    - if: '$RUN_ON_BRANCHES == "true"'
+    - if: '$DEVSECOPS_RUN_ON_BRANCHES == "true"'
   artifacts:
     expire_in: 1 day
 
@@ -91,7 +91,7 @@
   extends: .build:base
   image: node:${NODE_VERSION:-20}-alpine
   before_script:
-    - cd "${PROJECT_PATH:-.}"
+    - cd "${DEVSECOPS_PROJECT_PATH:-.}"
   script:
     - corepack enable
     - |
@@ -107,16 +107,16 @@
       fi
   artifacts:
     paths:
-      - ${PROJECT_PATH:-.}/.output/
-      - ${PROJECT_PATH:-.}/.nuxt/
-      - ${PROJECT_PATH:-.}/dist/
-      - ${PROJECT_PATH:-.}/node_modules/
+      - ${DEVSECOPS_PROJECT_PATH:-.}/.output/
+      - ${DEVSECOPS_PROJECT_PATH:-.}/.nuxt/
+      - ${DEVSECOPS_PROJECT_PATH:-.}/dist/
+      - ${DEVSECOPS_PROJECT_PATH:-.}/node_modules/
 
 .build:python:
   extends: .build:base
   image: python:${PYTHON_VERSION:-3.12}-slim
   before_script:
-    - cd "${PROJECT_PATH:-.}"
+    - cd "${DEVSECOPS_PROJECT_PATH:-.}"
   script:
     - python -m pip install -U pip
     - |
@@ -130,17 +130,17 @@
       fi
   artifacts:
     paths:
-      - ${PROJECT_PATH:-.}/dist/
-      - ${PROJECT_PATH:-.}/.venv/
+      - ${DEVSECOPS_PROJECT_PATH:-.}/dist/
+      - ${DEVSECOPS_PROJECT_PATH:-.}/.venv/
 
 .build:php:
   extends: .build:base
   image: php:${PHP_VERSION:-8.3}-cli
   before_script:
-    - cd "${PROJECT_PATH:-.}"
+    - cd "${DEVSECOPS_PROJECT_PATH:-.}"
   script:
     - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
     - composer install --no-interaction --prefer-dist --optimize-autoloader
   artifacts:
     paths:
-      - ${PROJECT_PATH:-.}/vendor/
+      - ${DEVSECOPS_PROJECT_PATH:-.}/vendor/

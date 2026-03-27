@@ -5,10 +5,10 @@
 # of raw logs.
 #
 # Quick Start:
-#   1. Set ENABLE_AI_REPORT: "true" in your pipeline variables
+#   1. Set DEVSECOPS_ENABLE_AI_REPORT: "true" in your pipeline variables
 #   2. Add AI_API_KEY as a CI/CD secret (Gemini or OpenAI key)
 #   3. Optional: Set AI_PROVIDER: "openai" to use OpenAI instead of Gemini
-#   4. Optional: Add SLACK_WEBHOOK_URL as a CI/CD secret for Slack notifications
+#   4. Optional: Add DEVSECOPS_SLACK_WEBHOOK_URL as a CI/CD secret for Slack notifications
 #
 # How It Works:
 #   1. ai-analysis job: Collects all pipeline artifacts (scan reports, test results,
@@ -17,12 +17,12 @@
 #      and posts it to Slack as a single, actionable message
 #
 # Variables:
-#   ENABLE_AI_REPORT: "false"           # Feature toggle (default: "false")
+#   DEVSECOPS_ENABLE_AI_REPORT: "false"           # Feature toggle (default: "false")
 #   AI_PROVIDER: "gemini"               # AI provider: "gemini" or "openai" (default: "gemini")
 #   AI_API_KEY: ""                      # API key for the selected provider (CI/CD secret)
 #   AI_MODEL: ""                        # Model override (default: auto per provider)
 #   AI_API_URL: ""                      # API URL override (default: auto per provider)
-#   SLACK_WEBHOOK_URL: ""              # Slack incoming webhook URL (CI/CD secret)
+#   DEVSECOPS_SLACK_WEBHOOK_URL: ""              # Slack incoming webhook URL (CI/CD secret)
 #
 # Provider Defaults:
 #   gemini:  model=gemini-2.0-flash  url=https://generativelanguage.googleapis.com/v1beta
@@ -274,7 +274,7 @@ ai-analysis:
       echo ""
       echo "=== Analysis complete: ${REPORT_COUNT} reports analyzed ==="
   rules:
-    - if: '$ENABLE_AI_REPORT != "true"'
+    - if: '$DEVSECOPS_ENABLE_AI_REPORT != "true"'
       when: never
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
       when: always
@@ -460,8 +460,8 @@ ai-summary:
       echo ""
 
       # --- Slack Notification ---
-      if [ -z "${SLACK_WEBHOOK_URL}" ]; then
-        echo "SLACK_WEBHOOK_URL not set. Skipping Slack notification."
+      if [ -z "${DEVSECOPS_SLACK_WEBHOOK_URL}" ]; then
+        echo "DEVSECOPS_SLACK_WEBHOOK_URL not set. Skipping Slack notification."
         echo "AI summary saved as artifact: ai-summary.md"
         exit 0
       fi
@@ -586,7 +586,7 @@ ai-summary:
       SLACK_HTTP_CODE=$(curl -s -w "%{http_code}" -o /tmp/slack-response.txt \
         -X POST -H "Content-Type: application/json" \
         -d "$SLACK_PAYLOAD" \
-        "${SLACK_WEBHOOK_URL}" \
+        "${DEVSECOPS_SLACK_WEBHOOK_URL}" \
         --max-time 30)
 
       if [ "$SLACK_HTTP_CODE" = "200" ]; then
@@ -597,7 +597,7 @@ ai-summary:
       fi
       rm -f /tmp/slack-response.txt
   rules:
-    - if: '$ENABLE_AI_REPORT != "true"'
+    - if: '$DEVSECOPS_ENABLE_AI_REPORT != "true"'
       when: never
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
       when: always

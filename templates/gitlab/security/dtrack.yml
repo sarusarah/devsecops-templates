@@ -7,27 +7,27 @@
 #
 # Quick Start:
 #   variables:
-#     ENABLE_DTRACK: "true"
-#     # DTRACK_URL defaults to https://api.dtrack.cnc-demo.liip.cloud
-#     # DTRACK_API_KEY: Set as CI/CD secret (do not define in variables)
+#     DEVSECOPS_ENABLE_DTRACK: "true"
+#     # DEVSECOPS_DTRACK_URL defaults to https://api.dtrack.cnc-demo.liip.cloud
+#     # DEVSECOPS_DTRACK_API_KEY: Set as CI/CD secret (do not define in variables)
 #
 # Project Identification:
 #   Option 1 - Use existing project UUID:
-#     DTRACK_PROJECT_UUID: "abc-123-def-456"
+#     DEVSECOPS_DTRACK_PROJECT_UUID: "abc-123-def-456"
 #
 #   Option 2 - Auto-create project with name+version:
-#     # Leave DTRACK_PROJECT_UUID unset
+#     # Leave DEVSECOPS_DTRACK_PROJECT_UUID unset
 #     # Project name auto-generated from CI_PROJECT_PATH
-#     # For monorepo: Set PROJECT_PATH (e.g., "frontend") → creates "platform/repo/frontend"
+#     # For monorepo: Set DEVSECOPS_PROJECT_PATH (e.g., "frontend") → creates "platform/repo/frontend"
 #
 # Variables:
-#   ENABLE_DTRACK: "true"               # Enable DTrack upload (default: false)
-#   DTRACK_URL: ""                      # DTrack base URL (default: https://api.dtrack.cnc-demo.liip.cloud)
-#   DTRACK_API_KEY: ""                  # Required: DTrack API key (set as CI/CD secret, do not define in variables)
-#   DTRACK_PROJECT_UUID: ""             # Optional: Explicit project UUID (takes precedence)
-#   DTRACK_PROJECT_NAME: ""             # Optional: Override auto-generated project name
-#   DTRACK_PROJECT_VERSION: ""          # Optional: Override version (default: CI_COMMIT_TAG or CI_COMMIT_SHORT_SHA)
-#   PROJECT_PATH: ""                    # Optional: Monorepo subproject path (e.g., "frontend")
+#   DEVSECOPS_ENABLE_DTRACK: "true"               # Enable DTrack upload (default: false)
+#   DEVSECOPS_DTRACK_URL: ""                      # DTrack base URL (default: https://api.dtrack.cnc-demo.liip.cloud)
+#   DEVSECOPS_DTRACK_API_KEY: ""                  # Required: DTrack API key (set as CI/CD secret, do not define in variables)
+#   DEVSECOPS_DTRACK_PROJECT_UUID: ""             # Optional: Explicit project UUID (takes precedence)
+#   DEVSECOPS_DTRACK_PROJECT_NAME: ""             # Optional: Override auto-generated project name
+#   DEVSECOPS_DTRACK_PROJECT_VERSION: ""          # Optional: Override version (default: CI_COMMIT_TAG or CI_COMMIT_SHORT_SHA)
+#   DEVSECOPS_PROJECT_PATH: ""                    # Optional: Monorepo subproject path (e.g., "frontend")
 
 dtrack-upload:
   stage: source
@@ -37,7 +37,7 @@ dtrack-upload:
   cache: {}
   variables:
     # Default Dependency-Track instance URL (can be overridden per project)
-    DTRACK_URL: "https://api.dtrack.cnc-demo.liip.cloud"
+    DEVSECOPS_DTRACK_URL: "https://api.dtrack.cnc-demo.liip.cloud"
   before_script:
     - |
       # Install dependencies for base64 encoding and API calls
@@ -47,13 +47,13 @@ dtrack-upload:
     - |
       set -e
 
-      if [ -z "$DTRACK_API_KEY" ]; then
-        echo "ERROR: DTRACK_API_KEY is required but not set"
+      if [ -z "$DEVSECOPS_DTRACK_API_KEY" ]; then
+        echo "ERROR: DEVSECOPS_DTRACK_API_KEY is required but not set"
         exit 1
       fi
 
       # Determine project path (monorepo support)
-      SCAN_PATH="${PROJECT_PATH:-.}"
+      SCAN_PATH="${DEVSECOPS_PROJECT_PATH:-.}"
 
       echo "================================================"
       echo "Generating CycloneDX SBOM for Dependency-Track"
@@ -77,39 +77,39 @@ dtrack-upload:
 
       echo "================================================"
       echo "Uploading SBOM to Dependency-Track"
-      echo "DTrack URL: ${DTRACK_URL}"
+      echo "DTrack URL: ${DEVSECOPS_DTRACK_URL}"
       echo "================================================"
 
       RESPONSE_FILE="dtrack-response.json"
 
-      if [ -n "$DTRACK_PROJECT_UUID" ]; then
+      if [ -n "$DEVSECOPS_DTRACK_PROJECT_UUID" ]; then
         # Option 1: Use explicit project UUID (PUT with JSON)
-        echo "Using explicit project UUID: ${DTRACK_PROJECT_UUID}"
+        echo "Using explicit project UUID: ${DEVSECOPS_DTRACK_PROJECT_UUID}"
 
         # Base64 encode the SBOM
         BOM_B64=$(base64 -w 0 < bom.json)
 
         # Construct JSON payload and upload via stdin
         HTTP_CODE=$(printf '%s' "$BOM_B64" | jq -R -s \
-          --arg project "$DTRACK_PROJECT_UUID" \
+          --arg project "$DEVSECOPS_DTRACK_PROJECT_UUID" \
           '{project: $project, bom: .}' | \
           curl -w "%{http_code}" -o "$RESPONSE_FILE" \
           --retry 1 \
           --retry-delay 5 \
           --max-time 60 \
-          -X PUT "${DTRACK_URL}/api/v1/bom" \
+          -X PUT "${DEVSECOPS_DTRACK_URL}/api/v1/bom" \
           -H "Content-Type: application/json" \
-          -H "X-Api-Key: ${DTRACK_API_KEY}" \
+          -H "X-Api-Key: ${DEVSECOPS_DTRACK_API_KEY}" \
           --data-binary @-)
       else
         # Option 2: Look up project by name; update if found, auto-create if not
         # Construct project name (monorepo support)
-        if [ -n "$DTRACK_PROJECT_NAME" ]; then
-          PROJECT_NAME="$DTRACK_PROJECT_NAME"
+        if [ -n "$DEVSECOPS_DTRACK_PROJECT_NAME" ]; then
+          PROJECT_NAME="$DEVSECOPS_DTRACK_PROJECT_NAME"
         else
           PROJECT_NAME="${CI_PROJECT_NAME}"
-          if [ -n "$PROJECT_PATH" ]; then
-            PROJECT_NAME="${CI_PROJECT_NAME}/${PROJECT_PATH}"
+          if [ -n "$DEVSECOPS_PROJECT_PATH" ]; then
+            PROJECT_NAME="${CI_PROJECT_NAME}/${DEVSECOPS_PROJECT_PATH}"
           fi
         fi
 
@@ -117,8 +117,8 @@ dtrack-upload:
 
         # Look up existing project by name only
         LOOKUP_RESPONSE=$(curl -s \
-          "${DTRACK_URL}/api/v1/project?name=${PROJECT_NAME}&excludeInactive=false" \
-          -H "X-Api-Key: ${DTRACK_API_KEY}")
+          "${DEVSECOPS_DTRACK_URL}/api/v1/project?name=${PROJECT_NAME}&excludeInactive=false" \
+          -H "X-Api-Key: ${DEVSECOPS_DTRACK_API_KEY}")
         EXISTING_UUID=$(echo "$LOOKUP_RESPONSE" | jq -r --arg name "$PROJECT_NAME" \
           '.[] | select(.name == $name) | .uuid' | head -1)
 
@@ -135,21 +135,21 @@ dtrack-upload:
             --retry 1 \
             --retry-delay 5 \
             --max-time 60 \
-            -X PUT "${DTRACK_URL}/api/v1/bom" \
+            -X PUT "${DEVSECOPS_DTRACK_URL}/api/v1/bom" \
             -H "Content-Type: application/json" \
-            -H "X-Api-Key: ${DTRACK_API_KEY}" \
+            -H "X-Api-Key: ${DEVSECOPS_DTRACK_API_KEY}" \
             --data-binary @-)
         else
           # Project does not exist yet — auto-create with name and version
-          PROJECT_VERSION="${DTRACK_PROJECT_VERSION:-${CI_COMMIT_TAG:-${CI_COMMIT_REF_SLUG}}}"
+          PROJECT_VERSION="${DEVSECOPS_DTRACK_PROJECT_VERSION:-${CI_COMMIT_TAG:-${CI_COMMIT_REF_SLUG}}}"
           echo "Project '${PROJECT_NAME}' not found — auto-creating (version: ${PROJECT_VERSION})"
 
           HTTP_CODE=$(curl -w "%{http_code}" -o "$RESPONSE_FILE" \
             --retry 1 \
             --retry-delay 5 \
             --max-time 60 \
-            -X POST "${DTRACK_URL}/api/v1/bom" \
-            -H "X-Api-Key: ${DTRACK_API_KEY}" \
+            -X POST "${DEVSECOPS_DTRACK_URL}/api/v1/bom" \
+            -H "X-Api-Key: ${DEVSECOPS_DTRACK_API_KEY}" \
             -F "autoCreate=true" \
             -F "projectName=${PROJECT_NAME}" \
             -F "projectVersion=${PROJECT_VERSION}" \
@@ -173,7 +173,7 @@ dtrack-upload:
         exit 1
       fi
   rules:
-    - if: '$ENABLE_DTRACK == "true"'
+    - if: '$DEVSECOPS_ENABLE_DTRACK == "true"'
     - when: never
   allow_failure: false
   artifacts:

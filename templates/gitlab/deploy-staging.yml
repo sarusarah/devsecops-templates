@@ -10,7 +10,7 @@
 #   variables:
 #     GITOPS_REPO: "git@gitlab.example.com:gitops/myapp.git"
 #     GITOPS_SSH_KEY: "${GITOPS_SSH_KEY}"  # Set as CI/CD secret
-#     STAGING_URL: "https://staging.example.com"
+#     DEVSECOPS_STAGING_URL: "https://staging.example.com"
 #
 # How It Works:
 #   1. Clone GitOps repository
@@ -25,8 +25,8 @@
 #   GITOPS_PATH: "values.yaml"          # Path to values file (default: "values.yaml")
 #   GITOPS_IMAGE_TAG_YQ_PATH: ".image.tag"  # YQ path to image tag field
 #   GITOPS_COMMIT_MESSAGE: ""           # Commit message template
-#   IMAGE_TAG: ""                       # Image tag to deploy (default: CI_COMMIT_SHA)
-#   STAGING_URL: ""                     # Staging environment URL
+#   DEVSECOPS_IMAGE_TAG: ""                       # Image tag to deploy (default: CI_COMMIT_SHA)
+#   DEVSECOPS_STAGING_URL: ""                     # Staging environment URL
 #
 # GitOps Repository Structure:
 #   Typical structure:
@@ -55,7 +55,7 @@
 # Environment Integration:
 #   Creates GitLab environment:
 #     - Name: staging
-#     - URL: STAGING_URL
+#     - URL: DEVSECOPS_STAGING_URL
 #     - Deployment tier: staging
 #   Visible in GitLab Environments page
 #
@@ -65,7 +65,7 @@
 #     extends: .deploy:staging:base
 #     variables:
 #       GITOPS_PATH: "staging/values.yaml"
-#       IMAGE_TAG: "${CI_COMMIT_TAG}"
+#       DEVSECOPS_IMAGE_TAG: "${CI_COMMIT_TAG}"
 #
 # Troubleshooting:
 #   "GITOPS_REPO is required":
@@ -113,7 +113,7 @@
       git config user.name "GitLab CI"
 
       # Update image tag in values file
-      IMAGE_TAG_VALUE="${IMAGE_TAG:-$CI_COMMIT_SHA}"
+      IMAGE_TAG_VALUE="${DEVSECOPS_IMAGE_TAG:-$CI_COMMIT_SHA}"
       GITOPS_FILE="${GITOPS_PATH:-values.yaml}"
       YQ_PATH="${GITOPS_IMAGE_TAG_YQ_PATH:-.image.tag}"
 
@@ -139,10 +139,10 @@
     - when: never
   environment:
     name: staging
-    url: ${STAGING_URL}
+    url: ${DEVSECOPS_STAGING_URL}
     deployment_tier: staging
 
 deploy-staging:
   extends: .deploy:staging:base
   variables:
-    IMAGE_TAG: ${CI_COMMIT_SHA}
+    DEVSECOPS_IMAGE_TAG: ${CI_COMMIT_SHA}
