@@ -6,7 +6,7 @@ compliance:secret-gate:
   stage: test
   image: zricethezav/gitleaks:latest
   variables:
-    SECURITY_POLICY: "strict"
+    DEVSECOPS_SECURITY_POLICY: "strict"
   script:
     - mkdir -p fixtures
     - echo "AWS_SECRET_ACCESS_KEY=AKIAxxxxxxxxxxxxxxxx" > fixtures/leak.txt

@@ -13,9 +13,9 @@
 #
 # Required CI/CD secrets:
 #   - GITOPS_SSH_KEY          — SSH key for pushing to GitOps repo
-#   - DTRACK_API_KEY          — (optional) Dependency-Track API key
+#   - DEVSECOPS_DTRACK_API_KEY          — (optional) Dependency-Track API key
 #   - AI_API_KEY              — (optional) Gemini or OpenAI API key
-#   - SLACK_WEBHOOK_URL       — (optional) Slack incoming webhook URL
+#   - DEVSECOPS_SLACK_WEBHOOK_URL       — (optional) Slack incoming webhook URL
 #
 # =============================================================================
 
@@ -46,17 +46,17 @@ variables:
 
   # --- Security scanner selection -----------------------------------------
   # Use Trivy for unified security scanning (default)
-  SECURITY_SCANNER: "trivy"
+  DEVSECOPS_SECURITY_SCANNER: "trivy"
 
   # --- Security policy & error handling ------------------------------------
-  # SECURITY_POLICY: "permissive"  # Start permissive, switch to "strict" once triaged
-  # TRIVY_EXIT_CODE: "0"           # "0" = warn only, "1" = fail pipeline on findings
-  # TRIVY_SEVERITY: "CRITICAL,HIGH" # Severity levels to report
-  # TRIVY_IGNORE_UNFIXED: "true"   # Ignore vulnerabilities without a fix
+  # DEVSECOPS_SECURITY_POLICY: "permissive"  # Start permissive, switch to "strict" once triaged
+  # DEVSECOPS_TRIVY_EXIT_CODE: "0"           # "0" = warn only, "1" = fail pipeline on findings
+  # DEVSECOPS_TRIVY_SEVERITY: "CRITICAL,HIGH" # Severity levels to report
+  # DEVSECOPS_TRIVY_IGNORE_UNFIXED: "true"   # Ignore vulnerabilities without a fix
 
   # --- DAST ---------------------------------------------------------------
-  ENABLE_DAST: "true"
-  STAGING_URL: "https://staging.drupal.example.com"
+  DEVSECOPS_ENABLE_DAST: "true"
+  DEVSECOPS_STAGING_URL: "https://staging.drupal.example.com"
 
   # --- GitOps deployment --------------------------------------------------
   GITOPS_REPO: "git@gitlab.example.com:gitops/drupal-app.git"
@@ -64,20 +64,20 @@ variables:
   # GITOPS_IMAGE_TAG_YQ_PATH: ".image.tag"
 
   # --- Container scanning (optional) --------------------------------------
-  # ENABLE_CONTAINER_SCAN: "true"
-  # IMAGE_NAME: "${CI_REGISTRY_IMAGE}"
-  # IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
+  # DEVSECOPS_ENABLE_CONTAINER_SCAN: "true"
+  # DEVSECOPS_IMAGE_NAME: "${CI_REGISTRY_IMAGE}"
+  # DEVSECOPS_IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
 
   # --- Dependency-Track SBOM upload (optional) ----------------------------
-  # ENABLE_DTRACK: "true"
-  # DTRACK_URL: "https://api.dtrack.example.com"
-  # DTRACK_API_KEY: "${DTRACK_API_KEY}"  # CI/CD secret
+  # DEVSECOPS_ENABLE_DTRACK: "true"
+  # DEVSECOPS_DTRACK_URL: "https://api.dtrack.example.com"
+  # DEVSECOPS_DTRACK_API_KEY: "${DEVSECOPS_DTRACK_API_KEY}"  # CI/CD secret
 
   # --- AI-powered pipeline analysis (optional) ----------------------------
-  # ENABLE_AI_REPORT: "true"
+  # DEVSECOPS_ENABLE_AI_REPORT: "true"
   # AI_PROVIDER: "gemini"          # or "openai" (default: "gemini")
   # AI_API_KEY: set as CI/CD secret (Gemini or OpenAI API key)
-  # SLACK_WEBHOOK_URL: set as CI/CD secret (Slack incoming webhook)
+  # DEVSECOPS_SLACK_WEBHOOK_URL: set as CI/CD secret (Slack incoming webhook)
 
 # ---------------------------------------------------------------------------
 # Custom jobs

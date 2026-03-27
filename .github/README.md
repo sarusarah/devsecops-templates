@@ -21,8 +21,8 @@ include:
 
 variables:
   LANGUAGE: "node"  # or python, php
-  ENABLE_DAST: "true"
-  STAGING_URL: "https://staging.example.com"
+  DEVSECOPS_ENABLE_DAST: "true"
+  DEVSECOPS_STAGING_URL: "https://staging.example.com"
 
 # Your custom jobs here...
 ```

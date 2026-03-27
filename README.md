@@ -78,23 +78,23 @@ variables:
   LANGUAGE: "node"  # node | python | php | generic
 
   # Security
-  SECURITY_SCANNER: "trivy"          # trivy | specialized
-  ENABLE_CONTAINER_SCAN: "true"
-  ENABLE_IAC_SCAN: "true"
-  ENABLE_DAST: "true"
-  STAGING_URL: "https://staging.example.com"
+  DEVSECOPS_SECURITY_SCANNER: "trivy"          # trivy | specialized
+  DEVSECOPS_ENABLE_CONTAINER_SCAN: "true"
+  DEVSECOPS_ENABLE_IAC_SCAN: "true"
+  DEVSECOPS_ENABLE_DAST: "true"
+  DEVSECOPS_STAGING_URL: "https://staging.example.com"
 
   # Dependency-Track
-  ENABLE_DTRACK: "true"
-  DTRACK_URL: "https://api.dtrack.example.com"
-  DTRACK_API_KEY: "${DTRACK_API_KEY}"            # CI/CD secret
+  DEVSECOPS_ENABLE_DTRACK: "true"
+  DEVSECOPS_DTRACK_URL: "https://api.dtrack.example.com"
+  DEVSECOPS_DTRACK_API_KEY: "${DEVSECOPS_DTRACK_API_KEY}"            # CI/CD secret
 
   # GitOps deployment
   GITOPS_REPO: "git@gitlab.example.com:gitops/myapp.git"
 
   # AI reporting
-  ENABLE_AI_REPORT: "true"
-  # AI_API_KEY and SLACK_WEBHOOK_URL → set as CI/CD secrets
+  DEVSECOPS_ENABLE_AI_REPORT: "true"
+  # AI_API_KEY and DEVSECOPS_SLACK_WEBHOOK_URL → set as CI/CD secrets
 
 # Your custom jobs here…
 ```
@@ -242,21 +242,21 @@ gitlab-ci-local --preview
 ```yaml
 variables:
   # Unified scanning with Trivy (recommended for consistency)
-  SECURITY_SCANNER: "trivy"
+  DEVSECOPS_SECURITY_SCANNER: "trivy"
   # Or use specialized tools for comprehensive analysis
-  SECURITY_SCANNER: "specialized"
-  SAST_TOOL: "semgrep"  # More thorough SAST
+  DEVSECOPS_SECURITY_SCANNER: "specialized"
+  DEVSECOPS_SAST_TOOL: "semgrep"  # More thorough SAST
 
   # Feature toggles
-  ENABLE_SECRETS: "true"
-  ENABLE_DEPENDENCY_SCAN: "true"
-  ENABLE_SAST: "true"
-  ENABLE_CONTAINER_SCAN: "false"
-  ENABLE_IAC_SCAN: "false"
-  ENABLE_DAST: "false"
+  DEVSECOPS_ENABLE_SECRETS: "true"
+  DEVSECOPS_ENABLE_DEPENDENCY_SCAN: "true"
+  DEVSECOPS_ENABLE_SAST: "true"
+  DEVSECOPS_ENABLE_CONTAINER_SCAN: "false"
+  DEVSECOPS_ENABLE_IAC_SCAN: "false"
+  DEVSECOPS_ENABLE_DAST: "false"
 
   # Security policy
-  SECURITY_POLICY: "strict"  # or "permissive"
+  DEVSECOPS_SECURITY_POLICY: "strict"  # or "permissive"
 ```
 
 **Trivy vs Specialized Tools:**
@@ -310,7 +310,7 @@ This template follows the **[OWASP Secure Pipeline Verification Standard (SPVS)]
 └─────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ AI-Powered Reporting (Optional - ENABLE_AI_REPORT: "true")             │
+│ AI-Powered Reporting (Optional - DEVSECOPS_ENABLE_AI_REPORT: "true")             │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ 10. ai-analysis → Gemini analyzes each stage's output                  │
 │ 11. ai-summary  → Consolidated summary → Slack notification            │
@@ -374,7 +374,7 @@ include:
 build:frontend:
   extends: .build:node
   variables:
-    PROJECT_PATH: frontend
+    DEVSECOPS_PROJECT_PATH: frontend
     NODE_VERSION: "20"
   rules:
     - changes:
@@ -383,7 +383,7 @@ build:frontend:
 secrets-detection:frontend:
   extends: secrets-detection
   variables:
-    PROJECT_PATH: frontend
+    DEVSECOPS_PROJECT_PATH: frontend
   rules:
     - changes:
         - frontend/**/*
@@ -392,7 +392,7 @@ secrets-detection:frontend:
 build:backend:
   extends: .build:python
   variables:
-    PROJECT_PATH: backend
+    DEVSECOPS_PROJECT_PATH: backend
     PYTHON_VERSION: "3.12"
   rules:
     - changes:
@@ -401,7 +401,7 @@ build:backend:
 secrets-detection:backend:
   extends: secrets-detection
   variables:
-    PROJECT_PATH: backend
+    DEVSECOPS_PROJECT_PATH: backend
   rules:
     - changes:
         - backend/**/*
@@ -437,13 +437,13 @@ jobs:
 - **Per-project CI/CD:** Each project runs its own build, test, and security scans
 - **Change detection:** Jobs only run when project files change
 - **Independent deployment:** Projects can be deployed separately
-- **PROJECT_PATH variable:** Scopes all operations to project directory
+- **DEVSECOPS_PROJECT_PATH variable:** Scopes all operations to project directory
 - **Efficient:** Reduces CI minutes by only testing affected projects
 
 ### How It Works
 
 **GitLab CI:**
-- Use `PROJECT_PATH` variable to specify project directory
+- Use `DEVSECOPS_PROJECT_PATH` variable to specify project directory
 - Use `rules:changes` for automatic change detection
 - Extend base jobs with project-specific configuration
 
@@ -488,35 +488,35 @@ PACKAGE_MANAGER: "npm"  # npm|yarn|pnpm
 ### Security Scanning
 ```yaml
 # Security tool selection
-SECURITY_SCANNER: "trivy"  # trivy|specialized
+DEVSECOPS_SECURITY_SCANNER: "trivy"  # trivy|specialized
 # trivy: Use Trivy for unified security scanning (recommended)
 # specialized: Use specialized tools (Gitleaks, Semgrep, etc.)
 
 # SAST tool selection (when using specialized tools or mixed approach)
-SAST_TOOL: "semgrep"  # semgrep|trivy
+DEVSECOPS_SAST_TOOL: "semgrep"  # semgrep|trivy
 # semgrep: Comprehensive SAST with Semgrep (recommended for thorough analysis)
 # trivy: Basic SAST with Trivy misconfiguration detection
 
 # Feature toggles
-ENABLE_SECRETS: "true"
-ENABLE_DEPENDENCY_SCAN: "true"
-ENABLE_SAST: "true"
-ENABLE_CONTAINER_SCAN: "false"
-ENABLE_IAC_SCAN: "false"
-ENABLE_DAST: "false"
-ENABLE_DTRACK: "false"  # Dependency-Track SBOM upload
-ENABLE_AI_REPORT: "false"  # AI pipeline analysis + Slack summary
+DEVSECOPS_ENABLE_SECRETS: "true"
+DEVSECOPS_ENABLE_DEPENDENCY_SCAN: "true"
+DEVSECOPS_ENABLE_SAST: "true"
+DEVSECOPS_ENABLE_CONTAINER_SCAN: "false"
+DEVSECOPS_ENABLE_IAC_SCAN: "false"
+DEVSECOPS_ENABLE_DAST: "false"
+DEVSECOPS_ENABLE_DTRACK: "false"  # Dependency-Track SBOM upload
+DEVSECOPS_ENABLE_AI_REPORT: "false"  # AI pipeline analysis + Slack summary
 
 # Security policy
-SECURITY_POLICY: "strict"  # strict|permissive
+DEVSECOPS_SECURITY_POLICY: "strict"  # strict|permissive
 ```
 
 ### Trivy Configuration
 ```yaml
-TRIVY_SEVERITY: "CRITICAL,HIGH"
-TRIVY_EXIT_CODE: "1"
-IMAGE_NAME: "${CI_REGISTRY_IMAGE}"
-IMAGE_TAG: "${CI_COMMIT_SHA}"
+DEVSECOPS_TRIVY_SEVERITY: "CRITICAL,HIGH"
+DEVSECOPS_TRIVY_EXIT_CODE: "1"
+DEVSECOPS_IMAGE_NAME: "${CI_REGISTRY_IMAGE}"
+DEVSECOPS_IMAGE_TAG: "${CI_COMMIT_SHA}"
 ```
 
 ### Container Scanning Configuration
@@ -533,9 +533,9 @@ include:
     file: /templates/gitlab/security/container.yml
 
 variables:
-  ENABLE_CONTAINER_SCAN: "true"
-  IMAGE_NAME: "${CI_REGISTRY_IMAGE}"
-  IMAGE_TAG: "latest"
+  DEVSECOPS_ENABLE_CONTAINER_SCAN: "true"
+  DEVSECOPS_IMAGE_NAME: "${CI_REGISTRY_IMAGE}"
+  DEVSECOPS_IMAGE_TAG: "latest"
 ```
 
 #### Advanced Configuration: Sub-Images
@@ -544,26 +544,26 @@ For projects that build multiple images (e.g., `myapp/staging:latest`, `myapp/pr
 
 ```yaml
 variables:
-  IMAGE_NAME: "${CI_REGISTRY_IMAGE}"
-  IMAGE_TAG: "latest"
-  CONTAINER_IMAGE_SUFFIX: "staging"  # Scans CI_REGISTRY_IMAGE/staging:latest
+  DEVSECOPS_IMAGE_NAME: "${CI_REGISTRY_IMAGE}"
+  DEVSECOPS_IMAGE_TAG: "latest"
+  DEVSECOPS_CONTAINER_IMAGE_SUFFIX: "staging"  # Scans CI_REGISTRY_IMAGE/staging:latest
 
 # Or override per-branch:
 container-security-scan:staging:
   extends: container-security-scan
   variables:
-    CONTAINER_IMAGE_SUFFIX: "staging"
+    DEVSECOPS_CONTAINER_IMAGE_SUFFIX: "staging"
   rules:
-    - if: '$ENABLE_CONTAINER_SCAN == "true" && $CI_COMMIT_BRANCH == "staging"'
+    - if: '$DEVSECOPS_ENABLE_CONTAINER_SCAN == "true" && $CI_COMMIT_BRANCH == "staging"'
   needs:
     - "build-staging-image"
 
 container-security-scan:prod:
   extends: container-security-scan
   variables:
-    CONTAINER_IMAGE_SUFFIX: "prod"
+    DEVSECOPS_CONTAINER_IMAGE_SUFFIX: "prod"
   rules:
-    - if: '$ENABLE_CONTAINER_SCAN == "true" && $CI_COMMIT_BRANCH == "prod"'
+    - if: '$DEVSECOPS_ENABLE_CONTAINER_SCAN == "true" && $CI_COMMIT_BRANCH == "prod"'
   needs:
     - "build-prod-image"
 
@@ -577,8 +577,8 @@ container-security-scan:
 
 ```yaml
 variables:
-  IMAGE_NAME: "docker.io/myorg/myapp"  # External registry
-  IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
+  DEVSECOPS_IMAGE_NAME: "docker.io/myorg/myapp"  # External registry
+  DEVSECOPS_IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
   
 container-security-scan:
   needs:
@@ -589,24 +589,24 @@ container-security-scan:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `IMAGE_NAME` | `${CI_REGISTRY_IMAGE}` | Full image repository path |
-| `IMAGE_TAG` | `${CI_COMMIT_SHORT_SHA}` | Image tag to scan |
-| `CONTAINER_IMAGE_SUFFIX` | _(empty)_ | Sub-path for image (e.g., `staging`, `prod`) |
-| `TRIVY_SEVERITY` | `UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL` | Severity levels to report |
-| `TRIVY_EXIT_CODE` | `0` | Exit code for failures (set to `1` to fail pipeline) |
-| `TRIVY_NON_SSL` | `false` | Set to `true` for insecure registries |
+| `DEVSECOPS_IMAGE_NAME` | `${CI_REGISTRY_IMAGE}` | Full image repository path |
+| `DEVSECOPS_IMAGE_TAG` | `${CI_COMMIT_SHORT_SHA}` | Image tag to scan |
+| `DEVSECOPS_CONTAINER_IMAGE_SUFFIX` | _(empty)_ | Sub-path for image (e.g., `staging`, `prod`) |
+| `DEVSECOPS_TRIVY_SEVERITY` | `UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL` | Severity levels to report |
+| `DEVSECOPS_TRIVY_EXIT_CODE` | `0` | Exit code for failures (set to `1` to fail pipeline) |
+| `DEVSECOPS_TRIVY_NON_SSL` | `false` | Set to `true` for insecure registries |
 
 #### Image Resolution
 
 The template builds the image reference as follows:
 
-1. Base: `IMAGE_NAME` (defaults to `CI_REGISTRY_IMAGE`)
-2. If `CONTAINER_IMAGE_SUFFIX` is set: `IMAGE_NAME/CONTAINER_IMAGE_SUFFIX`
-3. Tag: `:IMAGE_TAG`
+1. Base: `DEVSECOPS_IMAGE_NAME` (defaults to `CI_REGISTRY_IMAGE`)
+2. If `DEVSECOPS_CONTAINER_IMAGE_SUFFIX` is set: `DEVSECOPS_IMAGE_NAME/DEVSECOPS_CONTAINER_IMAGE_SUFFIX`
+3. Tag: `:DEVSECOPS_IMAGE_TAG`
 
 **Examples:**
-- `IMAGE_NAME=registry/project`, `IMAGE_TAG=v1.0` → `registry/project:v1.0`
-- `IMAGE_NAME=registry/project`, `CONTAINER_IMAGE_SUFFIX=staging`, `IMAGE_TAG=latest` → `registry/project/staging:latest`
+- `DEVSECOPS_IMAGE_NAME=registry/project`, `DEVSECOPS_IMAGE_TAG=v1.0` → `registry/project:v1.0`
+- `DEVSECOPS_IMAGE_NAME=registry/project`, `DEVSECOPS_CONTAINER_IMAGE_SUFFIX=staging`, `DEVSECOPS_IMAGE_TAG=latest` → `registry/project/staging:latest`
 
 ### Dependency-Track Integration
 
@@ -625,9 +625,9 @@ include:
       - /templates/gitlab/security/dtrack.yml
 
 variables:
-  ENABLE_DTRACK: "true"
-  DTRACK_URL: "https://api.dtrack.example.com"
-  DTRACK_API_KEY: "${DTRACK_API_KEY}"  # Set as CI/CD secret
+  DEVSECOPS_ENABLE_DTRACK: "true"
+  DEVSECOPS_DTRACK_URL: "https://api.dtrack.example.com"
+  DEVSECOPS_DTRACK_API_KEY: "${DEVSECOPS_DTRACK_API_KEY}"  # Set as CI/CD secret
 ```
 
 #### Quick Start (GitHub Actions)
@@ -639,17 +639,17 @@ jobs:
     with:
       dtrack_url: "https://api.dtrack.example.com"
     secrets:
-      dtrack_api_key: ${{ secrets.DTRACK_API_KEY }}
+      dtrack_api_key: ${{ secrets.DEVSECOPS_DTRACK_API_KEY }}
 ```
 
 #### Key Variables
 
 | Variable (GitLab) / Input (GitHub) | Description |
 |------------------------------------|-------------|
-| `DTRACK_URL` / `dtrack_url` | DTrack base URL (required) |
-| `DTRACK_API_KEY` / `dtrack_api_key` | DTrack API key (required, secret) |
-| `PROJECT_PATH` / `project_path` | Monorepo subproject path (e.g., `frontend`) |
-| `DTRACK_PROJECT_UUID` / `dtrack_project_uuid` | Explicit project UUID (optional) |
+| `DEVSECOPS_DTRACK_URL` / `dtrack_url` | DTrack base URL (required) |
+| `DEVSECOPS_DTRACK_API_KEY` / `dtrack_api_key` | DTrack API key (required, secret) |
+| `DEVSECOPS_PROJECT_PATH` / `project_path` | Monorepo subproject path (e.g., `frontend`) |
+| `DEVSECOPS_DTRACK_PROJECT_UUID` / `dtrack_project_uuid` | Explicit project UUID (optional) |
 
 **For complete configuration options, monorepo examples, and troubleshooting, see [docs/DEPENDENCY_TRACK.md](docs/DEPENDENCY_TRACK.md)**
 
@@ -664,9 +664,9 @@ GITOPS_PRODUCTION_BRANCH: "production"
 
 ### URLs
 ```yaml
-STAGING_URL: "https://staging.example.com"
-PRODUCTION_URL: "https://production.example.com"
-HEALTHCHECK_URL: "${STAGING_URL}/health"
+DEVSECOPS_STAGING_URL: "https://staging.example.com"
+DEVSECOPS_PRODUCTION_URL: "https://production.example.com"
+DEVSECOPS_HEALTHCHECK_URL: "${DEVSECOPS_STAGING_URL}/health"
 ```
 
 ### AI-Powered Pipeline Reporting
@@ -685,10 +685,10 @@ include:
       - /templates/gitlab/ai-report.yml
 
 variables:
-  ENABLE_AI_REPORT: "true"
+  DEVSECOPS_ENABLE_AI_REPORT: "true"
   # AI_PROVIDER: "openai"  # Optional: switch to OpenAI (default: "gemini")
   # Set AI_API_KEY as CI/CD secret (Gemini or OpenAI key)
-  # Set SLACK_WEBHOOK_URL as CI/CD secret (optional)
+  # Set DEVSECOPS_SLACK_WEBHOOK_URL as CI/CD secret (optional)
 ```
 
 #### Quick Start (GitHub Actions)
@@ -701,22 +701,22 @@ jobs:
     uses: ./.github/workflows/ai-report.yml
     secrets:
       ai_api_key: ${{ secrets.AI_API_KEY }}
-      slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+      slack_webhook_url: ${{ secrets.DEVSECOPS_SLACK_WEBHOOK_URL }}
 ```
 
 #### Key Variables
 
 | Variable / Secret | Description |
 |-------------------|-------------|
-| `ENABLE_AI_REPORT` | Feature toggle (default: `"false"`) |
+| `DEVSECOPS_ENABLE_AI_REPORT` | Feature toggle (default: `"false"`) |
 | `AI_API_KEY` | API key for Gemini or OpenAI (CI/CD secret) |
 | `AI_PROVIDER` | `"gemini"` (default) or `"openai"` |
-| `SLACK_WEBHOOK_URL` | Slack incoming webhook URL (CI/CD secret, optional) |
+| `DEVSECOPS_SLACK_WEBHOOK_URL` | Slack incoming webhook URL (CI/CD secret, optional) |
 | `AI_MODEL` | Model override (default: auto per provider) |
 
 ### Notifications
 ```yaml
-MATTERMOST_WEBHOOK_URL: "https://mattermost.com/hooks/xxx"
+DEVSECOPS_SLACK_WEBHOOK_URL: "https://mattermost.com/hooks/xxx"
 ```
 
 ---
@@ -734,7 +734,7 @@ The templates support two security policy modes that control how pipelines react
 
 ```yaml
 variables:
-  SECURITY_POLICY: "permissive"  # or "strict"
+  DEVSECOPS_SECURITY_POLICY: "permissive"  # or "strict"
 ```
 
 ### Ignore Files
@@ -753,15 +753,15 @@ Fine-tune which findings block the pipeline:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `TRIVY_EXIT_CODE` | `"1"` | `"0"` = warn only, `"1"` = fail on findings |
-| `TRIVY_SEVERITY` | `"CRITICAL,HIGH"` | Severity levels to report (`UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL`) |
-| `TRIVY_IGNORE_UNFIXED` | `"false"` | `"true"` = skip vulnerabilities without an available fix |
+| `DEVSECOPS_TRIVY_EXIT_CODE` | `"1"` | `"0"` = warn only, `"1"` = fail on findings |
+| `DEVSECOPS_TRIVY_SEVERITY` | `"CRITICAL,HIGH"` | Severity levels to report (`UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL`) |
+| `DEVSECOPS_TRIVY_IGNORE_UNFIXED` | `"false"` | `"true"` = skip vulnerabilities without an available fix |
 
 ### Recommended Approach
 
-1. **Start permissive** — set `SECURITY_POLICY: "permissive"` so pipelines keep running while you assess the findings
+1. **Start permissive** — set `DEVSECOPS_SECURITY_POLICY: "permissive"` so pipelines keep running while you assess the findings
 2. **Triage** — review findings in the GitLab Security Dashboard, add genuine false positives to ignore files
-3. **Go strict** — once the backlog is clean, switch to `SECURITY_POLICY: "strict"` and set `TRIVY_EXIT_CODE: "1"` to enforce a clean gate
+3. **Go strict** — once the backlog is clean, switch to `DEVSECOPS_SECURITY_POLICY: "strict"` and set `DEVSECOPS_TRIVY_EXIT_CODE: "1"` to enforce a clean gate
 
 ---
 
@@ -831,9 +831,9 @@ In **Settings > CI/CD > Variables**, add any secrets required by the templates y
 
 | Variable | When Needed |
 |----------|-------------|
-| `DTRACK_API_KEY` | Dependency-Track integration |
+| `DEVSECOPS_DTRACK_API_KEY` | Dependency-Track integration |
 | `AI_API_KEY` | AI pipeline analysis (Gemini or OpenAI key) |
-| `SLACK_WEBHOOK_URL` | Slack notifications for AI reports |
+| `DEVSECOPS_SLACK_WEBHOOK_URL` | Slack notifications for AI reports |
 | `GITOPS_SSH_KEY` | GitOps deployments |
 
 ### Step 4 — Commit and push
@@ -882,7 +882,7 @@ docs/examples/api-key-example.md
 
 **Problem:** Staging URL not accessible
 **Solution:**
-1. Verify `STAGING_URL` is correct
+1. Verify `DEVSECOPS_STAGING_URL` is correct
 2. Ensure staging is deployed before DAST runs
 3. Check network/firewall rules
 
@@ -903,16 +903,16 @@ unable to find the specified image "registry/project:tag"
 
 **Solution:** Ensure the image exists with the correct tag before scanning:
 
-1. **Set correct IMAGE_TAG variable:**
+1. **Set correct DEVSECOPS_IMAGE_TAG variable:**
    ```yaml
    variables:
-     IMAGE_TAG: "latest"  # Must match your actual build tag
+     DEVSECOPS_IMAGE_TAG: "latest"  # Must match your actual build tag
    ```
 
 2. **For sub-images (e.g., staging/prod):**
    ```yaml
    variables:
-     CONTAINER_IMAGE_SUFFIX: "staging"  # Scans CI_REGISTRY_IMAGE/staging:TAG
+     DEVSECOPS_CONTAINER_IMAGE_SUFFIX: "staging"  # Scans CI_REGISTRY_IMAGE/staging:TAG
    ```
 
 3. **Add needs dependency:**
@@ -927,10 +927,10 @@ unable to find the specified image "registry/project:tag"
    container-security-scan:staging:
      extends: container-security-scan
      variables:
-       CONTAINER_IMAGE_SUFFIX: "staging"
-       IMAGE_TAG: "latest"
+       DEVSECOPS_CONTAINER_IMAGE_SUFFIX: "staging"
+       DEVSECOPS_IMAGE_TAG: "latest"
      rules:
-       - if: '$ENABLE_CONTAINER_SCAN == "true" && $CI_COMMIT_BRANCH == "staging"'
+       - if: '$DEVSECOPS_ENABLE_CONTAINER_SCAN == "true" && $CI_COMMIT_BRANCH == "staging"'
      needs:
        - "Tag staging deployment image"
    ```
@@ -964,14 +964,14 @@ on:
 
 **Problem:** Security scans analyze all projects instead of just one
 
-**Solution:** Verify PROJECT_PATH (GitLab) or project_path (GitHub) is set:
+**Solution:** Verify DEVSECOPS_PROJECT_PATH (GitLab) or project_path (GitHub) is set:
 
 **GitLab CI:**
 ```yaml
 secrets-detection:frontend:
   extends: secrets-detection
   variables:
-    PROJECT_PATH: frontend  # Must be set
+    DEVSECOPS_PROJECT_PATH: frontend  # Must be set
 ```
 
 **GitHub Actions:**
@@ -986,11 +986,11 @@ secrets:
 
 **Problem:** Downstream jobs can't find artifacts from build stage
 
-**GitLab CI Solution:** Artifact paths must include PROJECT_PATH prefix:
+**GitLab CI Solution:** Artifact paths must include DEVSECOPS_PROJECT_PATH prefix:
 ```yaml
 artifacts:
   paths:
-    - ${PROJECT_PATH:-.}/dist/  # Correct
+    - ${DEVSECOPS_PROJECT_PATH:-.}/dist/  # Correct
     # NOT: - dist/  # Wrong - looks at repo root
 ```
 
@@ -1007,7 +1007,7 @@ artifacts:
 
 **Solution:** Ensure working directory is set before dependency installation:
 
-**GitLab CI:** Jobs should use `cd "${PROJECT_PATH:-.}"` in before_script
+**GitLab CI:** Jobs should use `cd "${DEVSECOPS_PROJECT_PATH:-.}"` in before_script
 **GitHub Actions:** Jobs should use `working-directory: ${{ inputs.project_path }}` in steps
 
 ---

@@ -465,7 +465,7 @@ HTTP_CODE=$(printf '%s' "$PAYLOAD" | curl -w "%{http_code}" -o response.json \
   --retry 1 --retry-delay 5 --max-time 60 \
   -X PUT "` + dtrackUrl + `/api/v1/bom" \
   -H "Content-Type: application/json" \
-  -H "X-Api-Key: ${DTRACK_API_KEY}" \
+  -H "X-Api-Key: ${DEVSECOPS_DTRACK_API_KEY}" \
   --data-binary @-)
 
 echo "HTTP Status: ${HTTP_CODE}"
@@ -484,7 +484,7 @@ fi
 		WithMountedDirectory("/src", source).
 		WithWorkdir("/src").
 		WithExec([]string{"apk", "add", "--no-cache", "curl", "jq", "coreutils"}).
-		WithSecretVariable("DTRACK_API_KEY", dtrackApiKey).
+		WithSecretVariable("DEVSECOPS_DTRACK_API_KEY", dtrackApiKey).
 		WithNewFile("/upload.sh", uploadScript).
 		WithExec([]string{"sh", "/upload.sh"})
 

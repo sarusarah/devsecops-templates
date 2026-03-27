@@ -7,7 +7,7 @@
 - Container scanning: Fixed image registry authentication with proper `TRIVY_USERNAME` and `TRIVY_PASSWORD` environment variables
 - Container scanning: Added support for remote image scanning (`--image-src remote`) to work without Docker daemon
 - Container scanning: Fixed image reference resolution for multi-environment deployments (staging/prod)
-- Container scanning: Added `CONTAINER_IMAGE_SUFFIX` variable for sub-image paths
+- Container scanning: Added `DEVSECOPS_CONTAINER_IMAGE_SUFFIX` variable for sub-image paths
 - YAML linting: Removed trailing spaces in `container.yml`
 - YAML linting: Added document start marker (`---`) to all YAML files for consistency
 - GitLab CI: Fixed `lint:gitlab-ci` job by using Python image instead of Alpine without Python
@@ -18,7 +18,7 @@
 - Documentation: YAML linter explanation (`docs/YAML_LINT_EXPLANATION.md`)
 - Documentation: Documentation index (`docs/README.md`)
 - Testing: Local linting script (`lint-local.sh`) for pre-commit validation
-- Container scanning: Support for insecure registries via `TRIVY_NON_SSL` variable
+- Container scanning: Support for insecure registries via `DEVSECOPS_TRIVY_NON_SSL` variable
 - Container scanning: Enhanced logging and error messages for debugging
 - README: Expanded container scanning configuration section with examples
 

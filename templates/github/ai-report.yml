@@ -15,7 +15,7 @@ name: AI Pipeline Analysis & Slack Summary
 #         ai_provider: "gemini"           # or "openai"
 #       secrets:
 #         ai_api_key: ${{ secrets.AI_API_KEY }}
-#         slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+#         slack_webhook_url: ${{ secrets.DEVSECOPS_SLACK_WEBHOOK_URL }}
 #
 # Provider Defaults:
 #   gemini:  model=gemini-2.0-flash  url=https://generativelanguage.googleapis.com/v1beta
@@ -412,11 +412,11 @@ jobs:
       - name: Send Slack notification
         if: always()
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.slack_webhook_url }}
+          DEVSECOPS_SLACK_WEBHOOK_URL: ${{ secrets.slack_webhook_url }}
           SUMMARY: ${{ env.SUMMARY }}
         run: |
-          if [ -z "${SLACK_WEBHOOK_URL}" ]; then
-            echo "SLACK_WEBHOOK_URL not set. Skipping Slack notification."
+          if [ -z "${DEVSECOPS_SLACK_WEBHOOK_URL}" ]; then
+            echo "DEVSECOPS_SLACK_WEBHOOK_URL not set. Skipping Slack notification."
             echo "AI summary saved as artifact: ai-summary.md"
             exit 0
           fi
@@ -536,7 +536,7 @@ jobs:
           SLACK_HTTP_CODE=$(curl -s -w "%{http_code}" -o /tmp/slack-response.txt \
             -X POST -H "Content-Type: application/json" \
             -d "$SLACK_PAYLOAD" \
-            "${SLACK_WEBHOOK_URL}" \
+            "${DEVSECOPS_SLACK_WEBHOOK_URL}" \
             --max-time 30)
 
           if [ "$SLACK_HTTP_CODE" = "200" ]; then

@@ -13,9 +13,9 @@
 #
 # Required CI/CD secrets:
 #   - GITOPS_SSH_KEY          — SSH key for pushing to GitOps repo
-#   - DTRACK_API_KEY          — (optional) Dependency-Track API key
+#   - DEVSECOPS_DTRACK_API_KEY          — (optional) Dependency-Track API key
 #   - AI_API_KEY              — (optional) Gemini or OpenAI API key
-#   - SLACK_WEBHOOK_URL       — (optional) Slack incoming webhook URL
+#   - DEVSECOPS_SLACK_WEBHOOK_URL       — (optional) Slack incoming webhook URL
 #
 # =============================================================================
 
@@ -47,18 +47,18 @@ variables:
 
   # --- Security scanner selection -----------------------------------------
   # Use specialized tools for comprehensive JavaScript/TypeScript analysis
-  SECURITY_SCANNER: "specialized"
-  SAST_TOOL: "semgrep"             # Semgrep has excellent JS/TS rules
+  DEVSECOPS_SECURITY_SCANNER: "specialized"
+  DEVSECOPS_SAST_TOOL: "semgrep"             # Semgrep has excellent JS/TS rules
 
   # --- Security policy & error handling ------------------------------------
-  # SECURITY_POLICY: "permissive"  # Start permissive, switch to "strict" once triaged
-  # TRIVY_EXIT_CODE: "0"           # "0" = warn only, "1" = fail pipeline on findings
-  # TRIVY_SEVERITY: "CRITICAL,HIGH" # Severity levels to report
-  # TRIVY_IGNORE_UNFIXED: "true"   # Ignore vulnerabilities without a fix
+  # DEVSECOPS_SECURITY_POLICY: "permissive"  # Start permissive, switch to "strict" once triaged
+  # DEVSECOPS_TRIVY_EXIT_CODE: "0"           # "0" = warn only, "1" = fail pipeline on findings
+  # DEVSECOPS_TRIVY_SEVERITY: "CRITICAL,HIGH" # Severity levels to report
+  # DEVSECOPS_TRIVY_IGNORE_UNFIXED: "true"   # Ignore vulnerabilities without a fix
 
   # --- DAST ---------------------------------------------------------------
-  ENABLE_DAST: "true"
-  STAGING_URL: "https://staging.example.com"
+  DEVSECOPS_ENABLE_DAST: "true"
+  DEVSECOPS_STAGING_URL: "https://staging.example.com"
 
   # --- GitOps deployment --------------------------------------------------
   GITOPS_REPO: "git@gitlab.example.com:gitops/nuxt-app.git"
@@ -66,20 +66,20 @@ variables:
   # GITOPS_IMAGE_TAG_YQ_PATH: ".image.tag"
 
   # --- Container scanning (optional) --------------------------------------
-  # ENABLE_CONTAINER_SCAN: "true"
-  # IMAGE_NAME: "${CI_REGISTRY_IMAGE}"
-  # IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
+  # DEVSECOPS_ENABLE_CONTAINER_SCAN: "true"
+  # DEVSECOPS_IMAGE_NAME: "${CI_REGISTRY_IMAGE}"
+  # DEVSECOPS_IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
 
   # --- Dependency-Track SBOM upload (optional) ----------------------------
-  ENABLE_DTRACK: "false"           # Set to "true" and configure below to enable
-  # DTRACK_URL: "https://api.dtrack.example.com"
-  # DTRACK_API_KEY: "${DTRACK_API_KEY}"  # CI/CD secret
+  DEVSECOPS_ENABLE_DTRACK: "false"           # Set to "true" and configure below to enable
+  # DEVSECOPS_DTRACK_URL: "https://api.dtrack.example.com"
+  # DEVSECOPS_DTRACK_API_KEY: "${DEVSECOPS_DTRACK_API_KEY}"  # CI/CD secret
 
   # --- AI-powered pipeline analysis (optional) ----------------------------
-  ENABLE_AI_REPORT: "false"        # Set to "true" and configure below to enable
+  DEVSECOPS_ENABLE_AI_REPORT: "false"        # Set to "true" and configure below to enable
   # AI_PROVIDER: "gemini"          # or "openai" (default: "gemini")
   # AI_API_KEY: set as CI/CD secret (Gemini or OpenAI API key)
-  # SLACK_WEBHOOK_URL: set as CI/CD secret (Slack incoming webhook)
+  # DEVSECOPS_SLACK_WEBHOOK_URL: set as CI/CD secret (Slack incoming webhook)
 
 # ---------------------------------------------------------------------------
 # Custom jobs
@@ -117,9 +117,9 @@ e2e-tests:
   stage: test
   image: cypress/included:15.3.0
   script:
-    - cypress run --config baseUrl=${STAGING_URL}
+    - cypress run --config baseUrl=${DEVSECOPS_STAGING_URL}
   rules:
-    - if: $ENABLE_E2E == "true"
+    - if: $DEVSECOPS_ENABLE_E2E == "true"
 
 # Tip: use a local devsecops.yml wrapper to pin the template version once.
 # See "Local Include Pattern" in the README for a step-by-step guide.

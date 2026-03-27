@@ -93,7 +93,7 @@ Upload to real Dependency-Track instance (requires credentials):
 dagger call dtrack-upload \
   --source=../examples/node \
   --dtrack-url=https://api.dtrack.example.com \
-  --dtrack-api-key=env:DTRACK_API_KEY \
+  --dtrack-api-key=env:DEVSECOPS_DTRACK_API_KEY \
   --project-name=myorg/myproject \
   --project-version=1.0.0
 
@@ -101,7 +101,7 @@ dagger call dtrack-upload \
 dagger call dtrack-upload \
   --source=../examples/node \
   --dtrack-url=https://api.dtrack.example.com \
-  --dtrack-api-key=env:DTRACK_API_KEY \
+  --dtrack-api-key=env:DEVSECOPS_DTRACK_API_KEY \
   --project-uuid=abc-123-def-456
 ```
 

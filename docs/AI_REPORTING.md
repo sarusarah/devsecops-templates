@@ -38,7 +38,7 @@ Choose your preferred AI provider:
 
 1. Go to [Slack API: Incoming Webhooks](https://api.slack.com/messaging/webhooks)
 2. Create a new webhook for your target channel
-3. Add the webhook URL as a CI/CD secret named `SLACK_WEBHOOK_URL`
+3. Add the webhook URL as a CI/CD secret named `DEVSECOPS_SLACK_WEBHOOK_URL`
 
 ### 3. Enable in Your Pipeline
 
@@ -54,7 +54,7 @@ include:
       # ... your other templates
 
 variables:
-  ENABLE_AI_REPORT: "true"
+  DEVSECOPS_ENABLE_AI_REPORT: "true"
   # AI_PROVIDER: "openai"       # Optional: defaults to "gemini"
 ```
 
@@ -71,7 +71,7 @@ jobs:
     uses: ./.github/workflows/ai-report.yml  # or your template path
     secrets:
       ai_api_key: ${{ secrets.AI_API_KEY }}
-      slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+      slack_webhook_url: ${{ secrets.DEVSECOPS_SLACK_WEBHOOK_URL }}
     # with:
     #   ai_provider: "openai"   # Optional: defaults to "gemini"
 ```
@@ -126,13 +126,13 @@ Deployment stages are **not** analyzed:
 | Secret | Required | Description |
 |--------|----------|-------------|
 | `AI_API_KEY` | Yes | API key for the configured AI provider (Google AI Studio or OpenAI) |
-| `SLACK_WEBHOOK_URL` | No | Slack incoming webhook URL. If not set, reports are saved as artifacts only |
+| `DEVSECOPS_SLACK_WEBHOOK_URL` | No | Slack incoming webhook URL. If not set, reports are saved as artifacts only |
 
 ### Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ENABLE_AI_REPORT` | `"false"` | Feature toggle — set to `"true"` to enable |
+| `DEVSECOPS_ENABLE_AI_REPORT` | `"false"` | Feature toggle — set to `"true"` to enable |
 | `AI_PROVIDER` | `"gemini"` | AI provider to use: `"gemini"` or `"openai"` |
 | `AI_MODEL` | Auto per provider | Model override. Defaults: `gemini-2.0-flash` (Gemini), `gpt-4.1-mini` (OpenAI) |
 | `AI_API_URL` | Auto per provider | API endpoint override. Defaults are set automatically per provider |
@@ -158,15 +158,15 @@ include:
 
 variables:
   LANGUAGE: "node"
-  ENABLE_SECRETS: "true"
-  ENABLE_DEPENDENCY_SCAN: "true"
-  ENABLE_SAST: "true"
-  ENABLE_AI_REPORT: "true"                       # Enable AI reporting
+  DEVSECOPS_ENABLE_SECRETS: "true"
+  DEVSECOPS_ENABLE_DEPENDENCY_SCAN: "true"
+  DEVSECOPS_ENABLE_SAST: "true"
+  DEVSECOPS_ENABLE_AI_REPORT: "true"                       # Enable AI reporting
   # AI_PROVIDER: "openai"                        # Optional: defaults to "gemini"
   # AI_MODEL: "gpt-4.1"                          # Optional: override the model
 ```
 
-Then add `AI_API_KEY` and optionally `SLACK_WEBHOOK_URL` as CI/CD secrets in GitLab Settings > CI/CD > Variables.
+Then add `AI_API_KEY` and optionally `DEVSECOPS_SLACK_WEBHOOK_URL` as CI/CD secrets in GitLab Settings > CI/CD > Variables.
 
 ### Monorepo Setup
 
@@ -174,17 +174,17 @@ Works the same — AI reporting analyzes all artifacts from all sub-project jobs
 
 ```yaml
 variables:
-  ENABLE_AI_REPORT: "true"
+  DEVSECOPS_ENABLE_AI_REPORT: "true"
 
 build:frontend:
   extends: .build:node
   variables:
-    PROJECT_PATH: frontend
+    DEVSECOPS_PROJECT_PATH: frontend
 
 build:backend:
   extends: .build:python
   variables:
-    PROJECT_PATH: backend
+    DEVSECOPS_PROJECT_PATH: backend
 
 # AI reporting automatically picks up all reports from both sub-projects
 ```
@@ -231,7 +231,7 @@ jobs:
     uses: ./.github/workflows/ai-report.yml        # Or your template path
     secrets:
       ai_api_key: ${{ secrets.AI_API_KEY }}
-      slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+      slack_webhook_url: ${{ secrets.DEVSECOPS_SLACK_WEBHOOK_URL }}
     # with:
     #   ai_provider: "openai"
     #   ai_model: "gpt-4.1"
@@ -288,12 +288,12 @@ Branch: main | Commit: abc1234
 
 | Variable | Default | Scope | Description |
 |----------|---------|-------|-------------|
-| `ENABLE_AI_REPORT` | `"false"` | `base.yml` | Enable AI reporting |
+| `DEVSECOPS_ENABLE_AI_REPORT` | `"false"` | `base.yml` | Enable AI reporting |
 | `AI_PROVIDER` | `"gemini"` | `ai-report.yml` | AI provider: `"gemini"` or `"openai"` |
 | `AI_MODEL` | Auto per provider | `ai-report.yml` | Model override (defaults: `gemini-2.0-flash` / `gpt-4.1-mini`) |
 | `AI_API_URL` | Auto per provider | `ai-report.yml` | API endpoint override |
 | `AI_API_KEY` | — | CI/CD secret | API key for the configured AI provider |
-| `SLACK_WEBHOOK_URL` | — | CI/CD secret | Slack webhook URL |
+| `DEVSECOPS_SLACK_WEBHOOK_URL` | — | CI/CD secret | Slack webhook URL |
 
 ### GitHub Actions
 
@@ -387,7 +387,7 @@ Too many requests in a short period. The template retries automatically (up to 2
 
 The AI analysis only processes reports that exist as artifacts from previous jobs. If a security scan is disabled or didn't produce output, it won't be analyzed.
 
-**Fix:** Ensure the relevant scans are enabled (`ENABLE_SECRETS`, `ENABLE_SAST`, etc.) and producing artifacts.
+**Fix:** Ensure the relevant scans are enabled (`DEVSECOPS_ENABLE_SECRETS`, `DEVSECOPS_ENABLE_SAST`, etc.) and producing artifacts.
 
 ### Large reports are truncated
 

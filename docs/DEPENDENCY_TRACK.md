@@ -29,9 +29,9 @@ include:
       - /templates/gitlab/security/dtrack.yml
 
 variables:
-  ENABLE_DTRACK: "true"
-  DTRACK_URL: "https://api.dtrack.example.com"
-  DTRACK_API_KEY: "${DTRACK_API_KEY}"  # Set as CI/CD secret
+  DEVSECOPS_ENABLE_DTRACK: "true"
+  DEVSECOPS_DTRACK_URL: "https://api.dtrack.example.com"
+  DEVSECOPS_DTRACK_API_KEY: "${DEVSECOPS_DTRACK_API_KEY}"  # Set as CI/CD secret
 ```
 
 ### GitHub Actions
@@ -50,7 +50,7 @@ jobs:
     with:
       dtrack_url: "https://api.dtrack.example.com"
     secrets:
-      dtrack_api_key: ${{ secrets.DTRACK_API_KEY }}
+      dtrack_api_key: ${{ secrets.DEVSECOPS_DTRACK_API_KEY }}
 ```
 
 ---
@@ -64,9 +64,9 @@ Automatically creates Dependency-Track projects using repository path and versio
 **GitLab CI:**
 ```yaml
 variables:
-  ENABLE_DTRACK: "true"
-  DTRACK_URL: "https://api.dtrack.example.com"
-  DTRACK_API_KEY: "${DTRACK_API_KEY}"
+  DEVSECOPS_ENABLE_DTRACK: "true"
+  DEVSECOPS_DTRACK_URL: "https://api.dtrack.example.com"
+  DEVSECOPS_DTRACK_API_KEY: "${DEVSECOPS_DTRACK_API_KEY}"
   # Project auto-named: "platform/my-repo"
   # Version auto-set: CI_COMMIT_TAG or CI_COMMIT_SHORT_SHA
 ```
@@ -78,7 +78,7 @@ with:
   # Project auto-named: "org/my-repo"
   # Version auto-set: branch/tag name (GITHUB_REF_NAME)
 secrets:
-  dtrack_api_key: ${{ secrets.DTRACK_API_KEY }}
+  dtrack_api_key: ${{ secrets.DEVSECOPS_DTRACK_API_KEY }}
 ```
 
 ### Mode 2: Explicit Project UUID
@@ -88,10 +88,10 @@ Use existing Dependency-Track project by UUID (takes precedence over auto-create
 **GitLab CI:**
 ```yaml
 variables:
-  ENABLE_DTRACK: "true"
-  DTRACK_URL: "https://api.dtrack.example.com"
-  DTRACK_API_KEY: "${DTRACK_API_KEY}"
-  DTRACK_PROJECT_UUID: "abc-123-def-456"  # Your project UUID from DTrack
+  DEVSECOPS_ENABLE_DTRACK: "true"
+  DEVSECOPS_DTRACK_URL: "https://api.dtrack.example.com"
+  DEVSECOPS_DTRACK_API_KEY: "${DEVSECOPS_DTRACK_API_KEY}"
+  DEVSECOPS_DTRACK_PROJECT_UUID: "abc-123-def-456"  # Your project UUID from DTrack
 ```
 
 **GitHub Actions:**
@@ -100,7 +100,7 @@ with:
   dtrack_url: "https://api.dtrack.example.com"
   dtrack_project_uuid: "abc-123-def-456"
 secrets:
-  dtrack_api_key: ${{ secrets.DTRACK_API_KEY }}
+  dtrack_api_key: ${{ secrets.DEVSECOPS_DTRACK_API_KEY }}
 ```
 
 ### Mode 3: Custom Project Name and Version
@@ -110,11 +110,11 @@ Override auto-generated names with custom values.
 **GitLab CI:**
 ```yaml
 variables:
-  ENABLE_DTRACK: "true"
-  DTRACK_URL: "https://api.dtrack.example.com"
-  DTRACK_API_KEY: "${DTRACK_API_KEY}"
-  DTRACK_PROJECT_NAME: "my-custom-project-name"
-  DTRACK_PROJECT_VERSION: "v1.2.3"
+  DEVSECOPS_ENABLE_DTRACK: "true"
+  DEVSECOPS_DTRACK_URL: "https://api.dtrack.example.com"
+  DEVSECOPS_DTRACK_API_KEY: "${DEVSECOPS_DTRACK_API_KEY}"
+  DEVSECOPS_DTRACK_PROJECT_NAME: "my-custom-project-name"
+  DEVSECOPS_DTRACK_PROJECT_VERSION: "v1.2.3"
 ```
 
 **GitHub Actions:**
@@ -124,7 +124,7 @@ with:
   dtrack_project_name: "my-custom-project-name"
   dtrack_project_version: "v1.2.3"
 secrets:
-  dtrack_api_key: ${{ secrets.DTRACK_API_KEY }}
+  dtrack_api_key: ${{ secrets.DEVSECOPS_DTRACK_API_KEY }}
 ```
 
 ---
@@ -142,9 +142,9 @@ include:
       - /templates/gitlab/security/dtrack.yml
 
 variables:
-  ENABLE_DTRACK: "true"
-  DTRACK_URL: "https://api.dtrack.example.com"
-  DTRACK_API_KEY: "${DTRACK_API_KEY}"
+  DEVSECOPS_ENABLE_DTRACK: "true"
+  DEVSECOPS_DTRACK_URL: "https://api.dtrack.example.com"
+  DEVSECOPS_DTRACK_API_KEY: "${DEVSECOPS_DTRACK_API_KEY}"
 ```
 
 **Result:**
@@ -156,15 +156,15 @@ variables:
 
 ```yaml
 variables:
-  ENABLE_DTRACK: "true"
-  DTRACK_URL: "https://api.dtrack.example.com"
-  DTRACK_API_KEY: "${DTRACK_API_KEY}"
-  DTRACK_PROJECT_VERSION: "${CI_COMMIT_TAG}"
+  DEVSECOPS_ENABLE_DTRACK: "true"
+  DEVSECOPS_DTRACK_URL: "https://api.dtrack.example.com"
+  DEVSECOPS_DTRACK_API_KEY: "${DEVSECOPS_DTRACK_API_KEY}"
+  DEVSECOPS_DTRACK_PROJECT_VERSION: "${CI_COMMIT_TAG}"
 
 # Only upload on tagged releases
 dtrack-upload:
   rules:
-    - if: '$ENABLE_DTRACK == "true" && $CI_COMMIT_TAG'
+    - if: '$DEVSECOPS_ENABLE_DTRACK == "true" && $CI_COMMIT_TAG'
 ```
 
 ### Scheduled Dependency Audits
@@ -173,7 +173,7 @@ dtrack-upload:
 # Run daily SBOM upload for main branch
 dtrack-upload:
   rules:
-    - if: '$ENABLE_DTRACK == "true" && $CI_PIPELINE_SOURCE == "schedule" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$DEVSECOPS_ENABLE_DTRACK == "true" && $CI_PIPELINE_SOURCE == "schedule" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
 ```
 
 ---
@@ -193,9 +193,9 @@ jobs:
   dtrack:
     uses: components/dev-sec-ops/.github/workflows/security-dtrack.yml@v1.0.2
     with:
-      dtrack_url: ${{ vars.DTRACK_URL }}
+      dtrack_url: ${{ vars.DEVSECOPS_DTRACK_URL }}
     secrets:
-      dtrack_api_key: ${{ secrets.DTRACK_API_KEY }}
+      dtrack_api_key: ${{ secrets.DEVSECOPS_DTRACK_API_KEY }}
 ```
 
 **Result:**
@@ -217,10 +217,10 @@ jobs:
   dtrack:
     uses: components/dev-sec-ops/.github/workflows/security-dtrack.yml@v1.0.2
     with:
-      dtrack_url: ${{ vars.DTRACK_URL }}
+      dtrack_url: ${{ vars.DEVSECOPS_DTRACK_URL }}
       dtrack_project_version: ${{ github.ref_name }}
     secrets:
-      dtrack_api_key: ${{ secrets.DTRACK_API_KEY }}
+      dtrack_api_key: ${{ secrets.DEVSECOPS_DTRACK_API_KEY }}
 ```
 
 ### Scheduled Dependency Audits
@@ -236,9 +236,9 @@ jobs:
   dtrack:
     uses: components/dev-sec-ops/.github/workflows/security-dtrack.yml@v1.0.2
     with:
-      dtrack_url: ${{ vars.DTRACK_URL }}
+      dtrack_url: ${{ vars.DEVSECOPS_DTRACK_URL }}
     secrets:
-      dtrack_api_key: ${{ secrets.DTRACK_API_KEY }}
+      dtrack_api_key: ${{ secrets.DEVSECOPS_DTRACK_API_KEY }}
 ```
 
 ---
@@ -256,17 +256,17 @@ include:
       - /templates/gitlab/security/dtrack.yml
 
 variables:
-  DTRACK_URL: "https://api.dtrack.example.com"
-  DTRACK_API_KEY: "${DTRACK_API_KEY}"
+  DEVSECOPS_DTRACK_URL: "https://api.dtrack.example.com"
+  DEVSECOPS_DTRACK_API_KEY: "${DEVSECOPS_DTRACK_API_KEY}"
 
 # Frontend component
 dtrack-upload:frontend:
   extends: dtrack-upload
   variables:
-    PROJECT_PATH: frontend
-    ENABLE_DTRACK: "true"
+    DEVSECOPS_PROJECT_PATH: frontend
+    DEVSECOPS_ENABLE_DTRACK: "true"
   rules:
-    - if: '$ENABLE_DTRACK == "true"'
+    - if: '$DEVSECOPS_ENABLE_DTRACK == "true"'
       changes:
         - frontend/**/*
 
@@ -274,10 +274,10 @@ dtrack-upload:frontend:
 dtrack-upload:backend:
   extends: dtrack-upload
   variables:
-    PROJECT_PATH: backend
-    ENABLE_DTRACK: "true"
+    DEVSECOPS_PROJECT_PATH: backend
+    DEVSECOPS_ENABLE_DTRACK: "true"
   rules:
-    - if: '$ENABLE_DTRACK == "true"'
+    - if: '$DEVSECOPS_ENABLE_DTRACK == "true"'
       changes:
         - backend/**/*
 
@@ -285,10 +285,10 @@ dtrack-upload:backend:
 dtrack-upload:mobile:
   extends: dtrack-upload
   variables:
-    PROJECT_PATH: mobile-app
-    ENABLE_DTRACK: "true"
+    DEVSECOPS_PROJECT_PATH: mobile-app
+    DEVSECOPS_ENABLE_DTRACK: "true"
   rules:
-    - if: '$ENABLE_DTRACK == "true"'
+    - if: '$DEVSECOPS_ENABLE_DTRACK == "true"'
       changes:
         - mobile-app/**/*
 ```
@@ -315,9 +315,9 @@ jobs:
     uses: components/dev-sec-ops/.github/workflows/security-dtrack.yml@v1.0.2
     with:
       project_path: frontend
-      dtrack_url: ${{ vars.DTRACK_URL }}
+      dtrack_url: ${{ vars.DEVSECOPS_DTRACK_URL }}
     secrets:
-      dtrack_api_key: ${{ secrets.DTRACK_API_KEY }}
+      dtrack_api_key: ${{ secrets.DEVSECOPS_DTRACK_API_KEY }}
 ```
 
 **Backend workflow** (`.github/workflows/backend.yml`):
@@ -335,9 +335,9 @@ jobs:
     uses: components/dev-sec-ops/.github/workflows/security-dtrack.yml@v1.0.2
     with:
       project_path: backend
-      dtrack_url: ${{ vars.DTRACK_URL }}
+      dtrack_url: ${{ vars.DEVSECOPS_DTRACK_URL }}
     secrets:
-      dtrack_api_key: ${{ secrets.DTRACK_API_KEY }}
+      dtrack_api_key: ${{ secrets.DEVSECOPS_DTRACK_API_KEY }}
 ```
 
 **Result:**
@@ -352,13 +352,13 @@ jobs:
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `ENABLE_DTRACK` | No | `"false"` | Enable Dependency-Track upload |
-| `DTRACK_URL` | **Yes** | - | DTrack base URL (e.g., `https://api.dtrack.example.com`) |
-| `DTRACK_API_KEY` | **Yes** | - | DTrack API key (set as CI/CD secret) |
-| `DTRACK_PROJECT_UUID` | No | - | Explicit project UUID (takes precedence) |
-| `DTRACK_PROJECT_NAME` | No | `${CI_PROJECT_PATH}[/${PROJECT_PATH}]` | Override project name |
-| `DTRACK_PROJECT_VERSION` | No | `${CI_COMMIT_TAG}` or `${CI_COMMIT_SHORT_SHA}` | Project version |
-| `PROJECT_PATH` | No | `"."` | Subproject path for monorepo |
+| `DEVSECOPS_ENABLE_DTRACK` | No | `"false"` | Enable Dependency-Track upload |
+| `DEVSECOPS_DTRACK_URL` | **Yes** | - | DTrack base URL (e.g., `https://api.dtrack.example.com`) |
+| `DEVSECOPS_DTRACK_API_KEY` | **Yes** | - | DTrack API key (set as CI/CD secret) |
+| `DEVSECOPS_DTRACK_PROJECT_UUID` | No | - | Explicit project UUID (takes precedence) |
+| `DEVSECOPS_DTRACK_PROJECT_NAME` | No | `${CI_PROJECT_PATH}[/${DEVSECOPS_PROJECT_PATH}]` | Override project name |
+| `DEVSECOPS_DTRACK_PROJECT_VERSION` | No | `${CI_COMMIT_TAG}` or `${CI_COMMIT_SHORT_SHA}` | Project version |
+| `DEVSECOPS_PROJECT_PATH` | No | `"."` | Subproject path for monorepo |
 
 ### GitHub Actions Inputs
 
@@ -389,10 +389,10 @@ HTTP Status Code: 401
 ```
 
 **Solutions:**
-1. **GitLab CI:** Set `DTRACK_API_KEY` in Settings → CI/CD → Variables
+1. **GitLab CI:** Set `DEVSECOPS_DTRACK_API_KEY` in Settings → CI/CD → Variables
    - ✓ Check "Mask variable"
    - ✓ Uncheck "Protect variable" (unless limiting to protected branches)
-2. **GitHub Actions:** Set `DTRACK_API_KEY` in Settings → Secrets → Actions
+2. **GitHub Actions:** Set `DEVSECOPS_DTRACK_API_KEY` in Settings → Secrets → Actions
 3. Verify API key in Dependency-Track:
    - Admin → Access Management → Teams → Automation → API Keys
    - Ensure key has `BOM_UPLOAD` permission
@@ -411,10 +411,10 @@ HTTP Status Code: 404
 ```
 
 **Solutions:**
-1. Verify `DTRACK_PROJECT_UUID` is correct (copy from DTrack UI)
+1. Verify `DEVSECOPS_DTRACK_PROJECT_UUID` is correct (copy from DTrack UI)
 2. Check project exists: DTrack → Projects → Search
 3. Use auto-create mode instead:
-   - Remove `DTRACK_PROJECT_UUID` variable
+   - Remove `DEVSECOPS_DTRACK_PROJECT_UUID` variable
    - Let DTrack auto-create project with name+version
 
 ### Network Timeout
@@ -425,7 +425,7 @@ curl: (28) Connection timed out after 60000 milliseconds
 ```
 
 **Solutions:**
-1. Verify `DTRACK_URL` is correct
+1. Verify `DEVSECOPS_DTRACK_URL` is correct
 2. Check network/firewall rules allow outbound HTTPS
 3. For self-hosted runners: Ensure connectivity to DTrack instance
 4. Test connectivity:
@@ -448,7 +448,7 @@ SBOM generated successfully (145 bytes)
    - **Java:** `pom.xml`, `build.gradle`
    - **Go:** `go.mod`
    - **Ruby:** `Gemfile.lock`
-2. Check `PROJECT_PATH` points to correct directory (monorepo)
+2. Check `DEVSECOPS_PROJECT_PATH` points to correct directory (monorepo)
 3. Download and inspect SBOM artifact:
    - **GitLab CI:** Job → Browse → `bom.json`
    - **GitHub Actions:** Workflow run → Artifacts → `dtrack-sbom-*`
@@ -461,17 +461,17 @@ SBOM generated successfully (145 bytes)
 
 **Solutions:**
 
-**GitLab CI:** Set unique `PROJECT_PATH` for each component:
+**GitLab CI:** Set unique `DEVSECOPS_PROJECT_PATH` for each component:
 ```yaml
 dtrack-upload:frontend:
   extends: dtrack-upload
   variables:
-    PROJECT_PATH: frontend  # Creates "platform/repo/frontend"
+    DEVSECOPS_PROJECT_PATH: frontend  # Creates "platform/repo/frontend"
 
 dtrack-upload:backend:
   extends: dtrack-upload
   variables:
-    PROJECT_PATH: backend   # Creates "platform/repo/backend"
+    DEVSECOPS_PROJECT_PATH: backend   # Creates "platform/repo/backend"
 ```
 
 **GitHub Actions:** Set unique `project_path` in separate workflows:
@@ -543,7 +543,7 @@ HTTP Status Code: 400
 
 | Platform | Pattern | Example |
 |----------|---------|---------|
-| GitLab CI | `${CI_PROJECT_PATH}/${PROJECT_PATH}` | `platform/my-app/frontend`<br>`platform/my-app/backend` |
+| GitLab CI | `${CI_PROJECT_PATH}/${DEVSECOPS_PROJECT_PATH}` | `platform/my-app/frontend`<br>`platform/my-app/backend` |
 | GitHub Actions | `${GITHUB_REPOSITORY}/${project_path}` | `myorg/my-app/frontend`<br>`myorg/my-app/backend` |
 
 ---
@@ -556,8 +556,8 @@ HTTP Status Code: 400
 ```yaml
 dtrack-upload:
   rules:
-    - if: '$ENABLE_DTRACK == "true" && $CI_COMMIT_BRANCH == "main"'
-    - if: '$ENABLE_DTRACK == "true" && $CI_COMMIT_TAG'
+    - if: '$DEVSECOPS_ENABLE_DTRACK == "true" && $CI_COMMIT_BRANCH == "main"'
+    - if: '$DEVSECOPS_ENABLE_DTRACK == "true" && $CI_COMMIT_TAG'
 ```
 
 **GitHub Actions:**
@@ -578,18 +578,18 @@ on:
 dtrack-upload:staging:
   extends: dtrack-upload
   variables:
-    DTRACK_PROJECT_NAME: "platform/my-app-staging"
-    DTRACK_PROJECT_VERSION: "staging-${CI_COMMIT_SHORT_SHA}"
+    DEVSECOPS_DTRACK_PROJECT_NAME: "platform/my-app-staging"
+    DEVSECOPS_DTRACK_PROJECT_VERSION: "staging-${CI_COMMIT_SHORT_SHA}"
   rules:
-    - if: '$ENABLE_DTRACK == "true" && $CI_COMMIT_BRANCH == "staging"'
+    - if: '$DEVSECOPS_ENABLE_DTRACK == "true" && $CI_COMMIT_BRANCH == "staging"'
 
 dtrack-upload:production:
   extends: dtrack-upload
   variables:
-    DTRACK_PROJECT_NAME: "platform/my-app"
-    DTRACK_PROJECT_VERSION: "${CI_COMMIT_TAG}"
+    DEVSECOPS_DTRACK_PROJECT_NAME: "platform/my-app"
+    DEVSECOPS_DTRACK_PROJECT_VERSION: "${CI_COMMIT_TAG}"
   rules:
-    - if: '$ENABLE_DTRACK == "true" && $CI_COMMIT_TAG'
+    - if: '$DEVSECOPS_ENABLE_DTRACK == "true" && $CI_COMMIT_TAG'
 ```
 
 ### Fail Pipeline on High-Risk Vulnerabilities
@@ -602,7 +602,7 @@ DTrack upload always succeeds if API accepts SBOM. To fail based on vulnerabilit
 
 1. **Use Auto-Create Mode:** Simpler setup, automatic project creation
 2. **Set API Key as Secret:** Never commit API keys to repository
-3. **Monorepo: Unique PROJECT_PATH:** Each component gets its own DTrack project
+3. **Monorepo: Unique DEVSECOPS_PROJECT_PATH:** Each component gets its own DTrack project
 4. **Version Tagging:** Use semantic versioning for releases
 5. **Scheduled Audits:** Run daily SBOM uploads on main branch to track dependency drift
 6. **Artifact Retention:** Keep `bom.json` artifacts for debugging (7 days default)

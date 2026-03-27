@@ -32,7 +32,7 @@ test_example() {
 
     # Override variables for testing
     export LANGUAGE="${language}"
-    export ENABLE_DAST="false"  # Disable DAST for local testing
+    export DEVSECOPS_ENABLE_DAST="false"  # Disable DAST for local testing
     export GITOPS_REPO=""       # Disable GitOps for local testing
 
     # Run gitlab-ci-local

@@ -73,52 +73,52 @@ jobs:
       - name: Upload SBOM to Dependency-Track
         working-directory: ${{ inputs.project_path }}
         env:
-          DTRACK_URL: ${{ inputs.dtrack_url }}
-          DTRACK_API_KEY: ${{ secrets.dtrack_api_key }}
-          DTRACK_PROJECT_UUID: ${{ inputs.dtrack_project_uuid }}
-          DTRACK_PROJECT_NAME: ${{ inputs.dtrack_project_name }}
-          DTRACK_PROJECT_VERSION: ${{ inputs.dtrack_project_version }}
+          DEVSECOPS_DTRACK_URL: ${{ inputs.dtrack_url }}
+          DEVSECOPS_DTRACK_API_KEY: ${{ secrets.dtrack_api_key }}
+          DEVSECOPS_DTRACK_PROJECT_UUID: ${{ inputs.dtrack_project_uuid }}
+          DEVSECOPS_DTRACK_PROJECT_NAME: ${{ inputs.dtrack_project_name }}
+          DEVSECOPS_DTRACK_PROJECT_VERSION: ${{ inputs.dtrack_project_version }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
-          PROJECT_PATH: ${{ inputs.project_path }}
+          DEVSECOPS_PROJECT_PATH: ${{ inputs.project_path }}
         run: |
           set -e
 
           echo "================================================"
           echo "Uploading SBOM to Dependency-Track"
-          echo "DTrack URL: ${DTRACK_URL}"
+          echo "DTrack URL: ${DEVSECOPS_DTRACK_URL}"
           echo "================================================"
 
           RESPONSE_FILE="dtrack-response.json"
 
-          if [ -n "$DTRACK_PROJECT_UUID" ]; then
+          if [ -n "$DEVSECOPS_DTRACK_PROJECT_UUID" ]; then
             # Option 1: Use explicit project UUID (PUT with JSON)
-            echo "Using explicit project UUID: ${DTRACK_PROJECT_UUID}"
+            echo "Using explicit project UUID: ${DEVSECOPS_DTRACK_PROJECT_UUID}"
 
             # Base64 encode the SBOM
             BOM_B64=$(base64 -w 0 < bom.json)
 
             # Use stdin to avoid "Argument list too long" for large SBOMs
             HTTP_CODE=$(printf '%s' "$BOM_B64" | jq -R -s \
-              --arg project "$DTRACK_PROJECT_UUID" \
+              --arg project "$DEVSECOPS_DTRACK_PROJECT_UUID" \
               '{project: $project, bom: .}' | \
               curl -w "%{http_code}" -o "$RESPONSE_FILE" \
               --retry 1 \
               --retry-delay 5 \
               --max-time 60 \
-              -X PUT "${DTRACK_URL}/api/v1/bom" \
+              -X PUT "${DEVSECOPS_DTRACK_URL}/api/v1/bom" \
               -H "Content-Type: application/json" \
-              -H "X-Api-Key: ${DTRACK_API_KEY}" \
+              -H "X-Api-Key: ${DEVSECOPS_DTRACK_API_KEY}" \
               --data-binary @-)
           else
             # Option 2: Look up project by name; update if found, auto-create if not
             # Construct project name (monorepo support)
-            if [ -n "$DTRACK_PROJECT_NAME" ]; then
-              PROJECT_NAME="$DTRACK_PROJECT_NAME"
+            if [ -n "$DEVSECOPS_DTRACK_PROJECT_NAME" ]; then
+              PROJECT_NAME="$DEVSECOPS_DTRACK_PROJECT_NAME"
             else
               PROJECT_NAME="$GITHUB_REPOSITORY"
-              if [ "$PROJECT_PATH" != "." ] && [ -n "$PROJECT_PATH" ]; then
-                PROJECT_NAME="${GITHUB_REPOSITORY}/${PROJECT_PATH}"
+              if [ "$DEVSECOPS_PROJECT_PATH" != "." ] && [ -n "$DEVSECOPS_PROJECT_PATH" ]; then
+                PROJECT_NAME="${GITHUB_REPOSITORY}/${DEVSECOPS_PROJECT_PATH}"
               fi
             fi
 
@@ -126,8 +126,8 @@ jobs:
 
             # Look up existing project by name only
             LOOKUP_RESPONSE=$(curl -s \
-              "${DTRACK_URL}/api/v1/project?name=${PROJECT_NAME}&excludeInactive=false" \
-              -H "X-Api-Key: ${DTRACK_API_KEY}")
+              "${DEVSECOPS_DTRACK_URL}/api/v1/project?name=${PROJECT_NAME}&excludeInactive=false" \
+              -H "X-Api-Key: ${DEVSECOPS_DTRACK_API_KEY}")
             EXISTING_UUID=$(echo "$LOOKUP_RESPONSE" | jq -r --arg name "$PROJECT_NAME" \
               '.[] | select(.name == $name) | .uuid' | head -1)
 
@@ -143,21 +143,21 @@ jobs:
                 --retry 1 \
                 --retry-delay 5 \
                 --max-time 60 \
-                -X PUT "${DTRACK_URL}/api/v1/bom" \
+                -X PUT "${DEVSECOPS_DTRACK_URL}/api/v1/bom" \
                 -H "Content-Type: application/json" \
-                -H "X-Api-Key: ${DTRACK_API_KEY}" \
+                -H "X-Api-Key: ${DEVSECOPS_DTRACK_API_KEY}" \
                 --data-binary @-)
             else
               # Project does not exist yet — auto-create with name and version
-              VERSION="${DTRACK_PROJECT_VERSION:-${GITHUB_REF_NAME}}"
+              VERSION="${DEVSECOPS_DTRACK_PROJECT_VERSION:-${GITHUB_REF_NAME}}"
               echo "Project '${PROJECT_NAME}' not found — auto-creating (version: ${VERSION})"
 
               HTTP_CODE=$(curl -w "%{http_code}" -o "$RESPONSE_FILE" \
                 --retry 1 \
                 --retry-delay 5 \
                 --max-time 60 \
-                -X POST "${DTRACK_URL}/api/v1/bom" \
-                -H "X-Api-Key: ${DTRACK_API_KEY}" \
+                -X POST "${DEVSECOPS_DTRACK_URL}/api/v1/bom" \
+                -H "X-Api-Key: ${DEVSECOPS_DTRACK_API_KEY}" \
                 -F "autoCreate=true" \
                 -F "projectName=${PROJECT_NAME}" \
                 -F "projectVersion=${VERSION}" \

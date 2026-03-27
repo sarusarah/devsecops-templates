@@ -168,7 +168,7 @@ If you're migrating from GitLab CI templates:
 1. Create separate workflow files per project (instead of single .gitlab-ci.yml)
 2. Replace `extends` with `uses` for reusable workflows
 3. Replace `rules:changes` with `paths:` in workflow triggers
-4. Replace `PROJECT_PATH` variable with `project_path` input parameter
+4. Replace `DEVSECOPS_PROJECT_PATH` variable with `project_path` input parameter
 5. Add explicit `needs` for job dependencies
 
 ## Examples

@@ -38,7 +38,7 @@ monorepo-gitlab/
 The `.gitlab-ci.yml` file demonstrates:
 - **Per-project jobs:** Separate jobs for frontend and backend
 - **Change detection:** Jobs only run when their project changes
-- **PROJECT_PATH variable:** Each job specifies its project directory
+- **DEVSECOPS_PROJECT_PATH variable:** Each job specifies its project directory
 - **Independent pipelines:** Frontend and backend can be tested/deployed independently
 
 **Key patterns:**
@@ -46,7 +46,7 @@ The `.gitlab-ci.yml` file demonstrates:
 build:frontend:
   extends: .build:node
   variables:
-    PROJECT_PATH: frontend
+    DEVSECOPS_PROJECT_PATH: frontend
   rules:
     - changes:
         - frontend/**/*
@@ -137,7 +137,7 @@ gitlab-ci-local --cwd examples/monorepo-gitlab build:backend
 
 1. Add project directory
 2. Copy existing job definitions
-3. Update PROJECT_PATH variable
+3. Update DEVSECOPS_PROJECT_PATH variable
 4. Update rules:changes paths
 
 Example:
@@ -145,7 +145,7 @@ Example:
 build:api:
   extends: .build:node
   variables:
-    PROJECT_PATH: api
+    DEVSECOPS_PROJECT_PATH: api
   rules:
     - changes:
         - api/**/*
@@ -160,7 +160,7 @@ Some scans should run on the entire repository:
 secrets-detection:root:
   extends: secrets-detection
   variables:
-    PROJECT_PATH: "."
+    DEVSECOPS_PROJECT_PATH: "."
 ```
 
 ### Shared Dependencies
@@ -180,8 +180,8 @@ For projects that build containers:
 container-scan:frontend:
   extends: container-security-scan
   variables:
-    IMAGE_NAME: "$CI_REGISTRY_IMAGE/frontend"
-    IMAGE_TAG: "$CI_COMMIT_SHORT_SHA"
+    DEVSECOPS_IMAGE_NAME: "$CI_REGISTRY_IMAGE/frontend"
+    DEVSECOPS_IMAGE_TAG: "$CI_COMMIT_SHORT_SHA"
 ```
 
 ## Migration from Single Project
@@ -196,7 +196,7 @@ If you're migrating from a single-project repository:
    ```
 
 2. **Update CI configuration:**
-   - Add PROJECT_PATH to all jobs
+   - Add DEVSECOPS_PROJECT_PATH to all jobs
    - Add change detection rules
    - Test locally before committing
 
@@ -218,12 +218,12 @@ If you're migrating from a single-project repository:
 - Verify paths match your directory structure
 
 ### Security scans scanning entire repo
-- Verify `PROJECT_PATH` is set correctly in job variables
+- Verify `DEVSECOPS_PROJECT_PATH` is set correctly in job variables
 - Check that paths don't include parent directories
 
 ### Build artifacts not found
-- Ensure artifact paths include `${PROJECT_PATH:-.}/` prefix
-- Check that PROJECT_PATH matches your directory structure
+- Ensure artifact paths include `${DEVSECOPS_PROJECT_PATH:-.}/` prefix
+- Check that DEVSECOPS_PROJECT_PATH matches your directory structure
 
 ## Resources
 

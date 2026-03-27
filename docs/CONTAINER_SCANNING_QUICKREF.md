@@ -6,8 +6,8 @@
 ```yaml
 # Your build pushes: registry/project:abc123
 variables:
-  ENABLE_CONTAINER_SCAN: "true"
-  # IMAGE_TAG defaults to ${CI_COMMIT_SHORT_SHA}
+  DEVSECOPS_ENABLE_CONTAINER_SCAN: "true"
+  # DEVSECOPS_IMAGE_TAG defaults to ${CI_COMMIT_SHORT_SHA}
 
 container-security-scan:
   needs: [build-image]
@@ -17,8 +17,8 @@ container-security-scan:
 ```yaml
 # Your build pushes: registry/project:latest
 variables:
-  ENABLE_CONTAINER_SCAN: "true"
-  IMAGE_TAG: "latest"
+  DEVSECOPS_ENABLE_CONTAINER_SCAN: "true"
+  DEVSECOPS_IMAGE_TAG: "latest"
 
 container-security-scan:
   needs: [build-image]
@@ -29,23 +29,23 @@ container-security-scan:
 # Your build pushes: registry/project/staging:latest
 #                    registry/project/prod:latest
 variables:
-  ENABLE_CONTAINER_SCAN: "true"
-  IMAGE_TAG: "latest"
+  DEVSECOPS_ENABLE_CONTAINER_SCAN: "true"
+  DEVSECOPS_IMAGE_TAG: "latest"
 
 container-security-scan:staging:
   extends: container-security-scan
   variables:
-    CONTAINER_IMAGE_SUFFIX: "staging"
+    DEVSECOPS_CONTAINER_IMAGE_SUFFIX: "staging"
   rules:
-    - if: '$ENABLE_CONTAINER_SCAN == "true" && $CI_COMMIT_BRANCH == "staging"'
+    - if: '$DEVSECOPS_ENABLE_CONTAINER_SCAN == "true" && $CI_COMMIT_BRANCH == "staging"'
   needs: [build-staging]
 
 container-security-scan:prod:
   extends: container-security-scan
   variables:
-    CONTAINER_IMAGE_SUFFIX: "prod"
+    DEVSECOPS_CONTAINER_IMAGE_SUFFIX: "prod"
   rules:
-    - if: '$ENABLE_CONTAINER_SCAN == "true" && $CI_COMMIT_BRANCH == "prod"'
+    - if: '$DEVSECOPS_ENABLE_CONTAINER_SCAN == "true" && $CI_COMMIT_BRANCH == "prod"'
   needs: [build-prod]
 
 container-security-scan:
@@ -57,9 +57,9 @@ container-security-scan:
 ```yaml
 # Your build pushes: docker.io/myorg/app:v1.0.0
 variables:
-  ENABLE_CONTAINER_SCAN: "true"
-  IMAGE_NAME: "docker.io/myorg/app"
-  IMAGE_TAG: "v${CI_COMMIT_TAG}"
+  DEVSECOPS_ENABLE_CONTAINER_SCAN: "true"
+  DEVSECOPS_IMAGE_NAME: "docker.io/myorg/app"
+  DEVSECOPS_IMAGE_TAG: "v${CI_COMMIT_TAG}"
 
 container-security-scan:
   needs: [push-to-external]
@@ -69,22 +69,22 @@ container-security-scan:
 
 | Variable | Default | Use When |
 |----------|---------|----------|
-| `IMAGE_NAME` | `${CI_REGISTRY_IMAGE}` | Using external registry |
-| `IMAGE_TAG` | `${CI_COMMIT_SHORT_SHA}` | Tag differs from commit SHA |
-| `CONTAINER_IMAGE_SUFFIX` | _(empty)_ | Using sub-images (e.g., `/staging`) |
-| `TRIVY_SEVERITY` | `UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL` | Want to filter by severity |
-| `TRIVY_EXIT_CODE` | `0` | Want to fail pipeline on findings (set to `1`) |
+| `DEVSECOPS_IMAGE_NAME` | `${CI_REGISTRY_IMAGE}` | Using external registry |
+| `DEVSECOPS_IMAGE_TAG` | `${CI_COMMIT_SHORT_SHA}` | Tag differs from commit SHA |
+| `DEVSECOPS_CONTAINER_IMAGE_SUFFIX` | _(empty)_ | Using sub-images (e.g., `/staging`) |
+| `DEVSECOPS_TRIVY_SEVERITY` | `UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL` | Want to filter by severity |
+| `DEVSECOPS_TRIVY_EXIT_CODE` | `0` | Want to fail pipeline on findings (set to `1`) |
 
 ## Image Reference Resolution
 
 The template builds image references as:
 ```
-${IMAGE_NAME}/${CONTAINER_IMAGE_SUFFIX}:${IMAGE_TAG}
+${DEVSECOPS_IMAGE_NAME}/${DEVSECOPS_CONTAINER_IMAGE_SUFFIX}:${DEVSECOPS_IMAGE_TAG}
 ```
 
 ### Examples
 
-| IMAGE_NAME | SUFFIX | TAG | Result |
+| DEVSECOPS_IMAGE_NAME | SUFFIX | TAG | Result |
 |------------|--------|-----|--------|
 | `registry/project` | - | `abc123` | `registry/project:abc123` |
 | `registry/project` | `staging` | `latest` | `registry/project/staging:latest` |
@@ -95,8 +95,8 @@ ${IMAGE_NAME}/${CONTAINER_IMAGE_SUFFIX}:${IMAGE_TAG}
 ### ❌ Image Not Found Error
 
 - [ ] Does the image exist with exact tag? (`docker pull <image>` to verify)
-- [ ] Does `IMAGE_TAG` match your build process?
-- [ ] Do you need `CONTAINER_IMAGE_SUFFIX`?
+- [ ] Does `DEVSECOPS_IMAGE_TAG` match your build process?
+- [ ] Do you need `DEVSECOPS_CONTAINER_IMAGE_SUFFIX`?
 - [ ] Did you add `needs:` dependency?
 - [ ] Is scan running after build stage?
 
@@ -104,19 +104,19 @@ ${IMAGE_NAME}/${CONTAINER_IMAGE_SUFFIX}:${IMAGE_TAG}
 
 - [ ] For GitLab registry: Is token access enabled?
 - [ ] For external registry: Are credentials set in CI/CD variables?
-- [ ] For self-signed certs: Set `TRIVY_NON_SSL: "true"`
+- [ ] For self-signed certs: Set `DEVSECOPS_TRIVY_NON_SSL: "true"`
 
 ### ❌ Too Many Vulnerabilities
 
-- [ ] Filter by severity: `TRIVY_SEVERITY: "HIGH,CRITICAL"`
+- [ ] Filter by severity: `DEVSECOPS_TRIVY_SEVERITY: "HIGH,CRITICAL"`
 - [ ] Create `.trivyignore` file for false positives
-- [ ] Use permissive mode: `SECURITY_POLICY: "permissive"`
+- [ ] Use permissive mode: `DEVSECOPS_SECURITY_POLICY: "permissive"`
 
 ## Quick Diagnostic Commands
 
 ### Check if image exists
 ```bash
-docker pull ${CI_REGISTRY_IMAGE}/${CONTAINER_IMAGE_SUFFIX}:${IMAGE_TAG}
+docker pull ${CI_REGISTRY_IMAGE}/${DEVSECOPS_CONTAINER_IMAGE_SUFFIX}:${DEVSECOPS_IMAGE_TAG}
 ```
 
 ### Manual scan locally

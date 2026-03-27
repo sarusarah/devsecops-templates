@@ -11,15 +11,15 @@ variables:
   PACKAGE_MANAGER: "npm"
 
   # Security scan toggles
-  ENABLE_SECRETS: "true"
-  ENABLE_DEPENDENCY_SCAN: "true"
-  ENABLE_SAST: "true"
-  ENABLE_CONTAINER_SCAN: "false"
-  ENABLE_IAC_SCAN: "false"
-  ENABLE_DAST: "false"
+  DEVSECOPS_ENABLE_SECRETS: "true"
+  DEVSECOPS_ENABLE_DEPENDENCY_SCAN: "true"
+  DEVSECOPS_ENABLE_SAST: "true"
+  DEVSECOPS_ENABLE_CONTAINER_SCAN: "false"
+  DEVSECOPS_ENABLE_IAC_SCAN: "false"
+  DEVSECOPS_ENABLE_DAST: "false"
 
   # Security policy
-  SECURITY_POLICY: "strict"
+  DEVSECOPS_SECURITY_POLICY: "strict"
 
   # Mock values for local testing
   CI_PROJECT_PATH: "devsecops/template"
@@ -28,8 +28,8 @@ variables:
   CI_COMMIT_REF_NAME: "main"
   CI_DEFAULT_BRANCH: "main"
   CI_PIPELINE_URL: "https://gitlab.com/pipeline/12345"
-  STAGING_URL: "https://staging.example.com"
-  PRODUCTION_URL: "https://production.example.com"
+  DEVSECOPS_STAGING_URL: "https://staging.example.com"
+  DEVSECOPS_PRODUCTION_URL: "https://production.example.com"
 
   # GitOps (mock for local)
   GITOPS_REPO: ""

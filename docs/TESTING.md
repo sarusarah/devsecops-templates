@@ -98,7 +98,7 @@ dagger call dtrack-test \
 dagger call dtrack-upload \
   --source=../examples/node \
   --dtrack-url=https://api.dtrack.example.com \
-  --dtrack-api-key=env:DTRACK_API_KEY \
+  --dtrack-api-key=env:DEVSECOPS_DTRACK_API_KEY \
   --project-name=myproject \
   --project-version=1.0.0
 ```

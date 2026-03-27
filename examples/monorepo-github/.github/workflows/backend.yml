@@ -64,6 +64,6 @@ jobs:
   #   uses: platform/devsecops-template/.github/workflows/security-dtrack.yml@main
   #   with:
   #     project_path: backend
-  #     dtrack_url: ${{ vars.DTRACK_URL }}
+  #     dtrack_url: ${{ vars.DEVSECOPS_DTRACK_URL }}
   #   secrets:
-  #     dtrack_api_key: ${{ secrets.DTRACK_API_KEY }}
+  #     dtrack_api_key: ${{ secrets.DEVSECOPS_DTRACK_API_KEY }}
