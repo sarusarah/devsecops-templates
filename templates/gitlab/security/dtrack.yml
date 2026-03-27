@@ -31,7 +31,9 @@
 
 dtrack-upload:
   stage: source
-  image: aquasec/trivy:0.58.1
+  image:
+    name: aquasec/trivy:0.58.1
+    entrypoint: [""]
   cache: {}
   variables:
     # Default Dependency-Track instance URL (can be overridden per project)

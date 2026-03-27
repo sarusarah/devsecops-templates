@@ -52,7 +52,9 @@
 
 container-security-scan:
   stage: package
-  image: aquasec/trivy:0.58.1
+  image:
+    name: aquasec/trivy:0.58.1
+    entrypoint: [""]
   cache: {}
   before_script:
     - |

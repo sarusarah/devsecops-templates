@@ -49,7 +49,9 @@
 # Trivy-based SAST (basic misconfiguration and security checks)
 sast:
   stage: source
-  image: aquasec/trivy:0.58.1
+  image:
+    name: aquasec/trivy:0.58.1
+    entrypoint: [""]
   before_script: []
   cache: {}
   script:
