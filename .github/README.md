@@ -1,7 +1,16 @@
-# GitLab DevSecOps CI/CD Template Library
+# GitHub DevSecOps CI/CD Template Library
 
-A comprehensive, enterprise-grade GitLab CI/CD template library implementing DevSecOps best practices with automated security scanning, testing, and deployment.
+A comprehensive, enterprise-grade GitHub CI/CD template library implementing DevSecOps best practices with automated security scanning, testing, and deployment.
 
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [.github Directory Content](#github-directory-content)
+  - [Workflows](#workflows)
+  - [Dependency Management](#dependency-management)
+- [Running Checks Locally](#running-checks-locally)
+- [Contributing](#contributing)
+- [Resources](#resources)
 
 ## Quick Start
 
@@ -32,7 +41,7 @@ variables:
 ---
 ## .github directory content
 
-Ccontains GitHub-specific configuration files for automation, CI/CD workflows, and dependency management.
+Contains GitHub-specific configuration files for automation, CI/CD workflows, and dependency management.
 
 ### Workflows
 
