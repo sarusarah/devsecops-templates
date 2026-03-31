@@ -9,7 +9,7 @@
 # Quick Start:
 #   variables:
 #     DEVSECOPS_ENABLE_DEPENDENCY_SCAN: "true"
-#     LANGUAGE: "node"  # or "python", "php"
+#     DEVSECOPS_PROJECT_LANGUAGE: "node"  # or "python", "php"
 #     DEVSECOPS_SECURITY_SCANNER: "trivy"  # or "specialized"
 #
 # Scanner Options:
@@ -29,7 +29,7 @@
 # Variables:
 #   DEVSECOPS_ENABLE_DEPENDENCY_SCAN: "true"      # Enable dependency scanning (default: "true")
 #   DEVSECOPS_SECURITY_SCANNER: "trivy"           # Scanner: "trivy" or "specialized" (default: "trivy")
-#   LANGUAGE: "node"                    # Language: "node", "python", "php" (required for specialized)
+#   DEVSECOPS_PROJECT_LANGUAGE: "node"                    # Language: "node", "python", "php" (required for specialized)
 #   DEVSECOPS_PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "backend")
 #   DEVSECOPS_SECURITY_POLICY: "strict"           # Policy: "strict" or "permissive" (default: "strict")
 #
@@ -42,7 +42,7 @@
 #   Scan specific subdirectory:
 #   variables:
 #     DEVSECOPS_PROJECT_PATH: "backend"
-#     LANGUAGE: "python"
+#     DEVSECOPS_PROJECT_LANGUAGE: "python"
 #     DEVSECOPS_ENABLE_DEPENDENCY_SCAN: "true"
 #
 # See Also:
@@ -88,7 +88,7 @@ dependency-scanning-specialized:
     - |
       set -e
       cd "${DEVSECOPS_PROJECT_PATH:-.}"
-      case "${LANGUAGE}" in
+      case "${DEVSECOPS_PROJECT_LANGUAGE}" in
         php)
           curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
           composer audit --format=json > dependency-scan.json || true

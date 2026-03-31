@@ -29,7 +29,7 @@ include:
       - /templates/security/sast.yml
 
 variables:
-  LANGUAGE: "node"  # or python, php
+  DEVSECOPS_PROJECT_LANGUAGE: "node"  # or python, php
   DEVSECOPS_ENABLE_DAST: "true"
   DEVSECOPS_STAGING_URL: "https://staging.example.com"
 

@@ -116,7 +116,7 @@ dagger call ai-report-test --source=../examples/node
 # Run with live Gemini API validation
 dagger call ai-report-test \
   --source=../examples/node \
-  --gemini-api-key=env:AI_API_KEY
+  --gemini-api-key=env:DEVSECOPS_AI_REPORT_API_KEY
 ```
 
 Validates: report file discovery, Gemini request/response handling, summary aggregation, Slack Block Kit payload construction, fallback behavior, and large report truncation.
@@ -215,7 +215,7 @@ include:
   - local: /templates/gitlab/base.yml
 
 variables:
-  LANGUAGE: "node"
+  DEVSECOPS_PROJECT_LANGUAGE: "node"
 
 # Local validation with Dagger (optional)
 dagger-test:
@@ -225,7 +225,7 @@ dagger-test:
     - docker:dind
   script:
     - cd dagger
-    - dagger call test --source=.. --language=${LANGUAGE}
+    - dagger call test --source=.. --language=${DEVSECOPS_PROJECT_LANGUAGE}
   allow_failure: true
 ```
 

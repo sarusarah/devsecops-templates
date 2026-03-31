@@ -14,7 +14,7 @@
 # Required CI/CD secrets:
 #   - GITOPS_SSH_KEY          — SSH key for pushing to GitOps repo
 #   - DEVSECOPS_DTRACK_API_KEY          — (optional) Dependency-Track API key
-#   - AI_API_KEY              — (optional) Gemini or OpenAI API key
+#   - DEVSECOPS_AI_REPORT_API_KEY    — (optional) Gemini or OpenAI API key
 #   - DEVSECOPS_SLACK_WEBHOOK_URL       — (optional) Slack incoming webhook URL
 #
 # =============================================================================
@@ -40,9 +40,9 @@ include:
 # Variables — tune scanning, deployment, and optional integrations
 # ---------------------------------------------------------------------------
 variables:
-  APP_NAME: "drupal-app"
-  LANGUAGE: "php"
-  PHP_VERSION: "8.3"
+  DEVSECOPS_APP_NAME: "drupal-app"
+  DEVSECOPS_PROJECT_LANGUAGE: "php"
+  DEVSECOPS_PHP_VERSION: "8.3"
 
   # --- Security scanner selection -----------------------------------------
   # Use Trivy for unified security scanning (default)
@@ -75,8 +75,8 @@ variables:
 
   # --- AI-powered pipeline analysis (optional) ----------------------------
   # DEVSECOPS_ENABLE_AI_REPORT: "true"
-  # AI_PROVIDER: "gemini"          # or "openai" (default: "gemini")
-  # AI_API_KEY: set as CI/CD secret (Gemini or OpenAI API key)
+  # DEVSECOPS_AI_REPORT_PROVIDER: "gemini"          # or "openai" (default: "gemini")
+  # DEVSECOPS_AI_REPORT_API_KEY: set as CI/CD secret (Gemini or OpenAI API key)
   # DEVSECOPS_SLACK_WEBHOOK_URL: set as CI/CD secret (Slack incoming webhook)
 
 # ---------------------------------------------------------------------------
@@ -85,7 +85,7 @@ variables:
 
 build-application:
   stage: build
-  image: php:${PHP_VERSION}-cli
+  image: php:${DEVSECOPS_PHP_VERSION}-cli
   script:
     - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
     - composer install --no-interaction --prefer-dist --optimize-autoloader
@@ -96,7 +96,7 @@ build-application:
 
 unit-tests:
   stage: test
-  image: php:${PHP_VERSION}-cli
+  image: php:${DEVSECOPS_PHP_VERSION}-cli
   script:
     - vendor/bin/phpunit --configuration phpunit.xml
   artifacts:
@@ -112,7 +112,7 @@ unit-tests:
 
 lint-phpcs:
   stage: test
-  image: php:${PHP_VERSION}-cli
+  image: php:${DEVSECOPS_PHP_VERSION}-cli
   script:
     - vendor/bin/phpcs -q
   rules:

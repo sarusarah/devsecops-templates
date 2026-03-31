@@ -45,8 +45,8 @@ build:frontend:
   extends: .build:node
   variables:
     DEVSECOPS_PROJECT_PATH: frontend
-    NODE_VERSION: "20"
-    PACKAGE_MANAGER: "npm"
+    DEVSECOPS_NODE_VERSION: "20"
+    DEVSECOPS_PACKAGE_MANAGER: "npm"
   rules:
     - changes:
         - frontend/**/*
@@ -107,7 +107,7 @@ build:backend:
   extends: .build:python
   variables:
     DEVSECOPS_PROJECT_PATH: backend
-    PYTHON_VERSION: "3.12"
+    DEVSECOPS_PYTHON_VERSION: "3.12"
   rules:
     - changes:
         - backend/**/*

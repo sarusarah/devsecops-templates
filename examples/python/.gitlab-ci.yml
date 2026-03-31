@@ -14,7 +14,7 @@
 # Required CI/CD secrets:
 #   - GITOPS_SSH_KEY          — SSH key for pushing to GitOps repo
 #   - DEVSECOPS_DTRACK_API_KEY          — (optional) Dependency-Track API key
-#   - AI_API_KEY              — (optional) Gemini or OpenAI API key
+#   - DEVSECOPS_AI_REPORT_API_KEY    — (optional) Gemini or OpenAI API key
 #   - DEVSECOPS_SLACK_WEBHOOK_URL       — (optional) Slack incoming webhook URL
 #
 # =============================================================================
@@ -40,9 +40,9 @@ include:
 # Variables — tune scanning, deployment, and optional integrations
 # ---------------------------------------------------------------------------
 variables:
-  APP_NAME: "python-app"
-  LANGUAGE: "python"
-  PYTHON_VERSION: "3.12"
+  DEVSECOPS_APP_NAME: "python-app"
+  DEVSECOPS_PROJECT_LANGUAGE: "python"
+  DEVSECOPS_PYTHON_VERSION: "3.12"
 
   # --- Security scanner selection -----------------------------------------
   # Use Trivy for unified security scanning (default)
@@ -75,8 +75,8 @@ variables:
 
   # --- AI-powered pipeline analysis (optional) ----------------------------
   # DEVSECOPS_ENABLE_AI_REPORT: "true"
-  # AI_PROVIDER: "gemini"          # or "openai" (default: "gemini")
-  # AI_API_KEY: set as CI/CD secret (Gemini or OpenAI API key)
+  # DEVSECOPS_AI_REPORT_PROVIDER: "gemini"          # or "openai" (default: "gemini")
+  # DEVSECOPS_AI_REPORT_API_KEY: set as CI/CD secret (Gemini or OpenAI API key)
   # DEVSECOPS_SLACK_WEBHOOK_URL: set as CI/CD secret (Slack incoming webhook)
 
 # ---------------------------------------------------------------------------
@@ -85,7 +85,7 @@ variables:
 
 build-application:
   stage: build
-  image: python:${PYTHON_VERSION}-slim
+  image: python:${DEVSECOPS_PYTHON_VERSION}-slim
   script:
     - python -m pip install -U pip
     - pip install -r requirements.txt
@@ -98,7 +98,7 @@ build-application:
 
 unit-tests:
   stage: test
-  image: python:${PYTHON_VERSION}-slim
+  image: python:${DEVSECOPS_PYTHON_VERSION}-slim
   script:
     - python -m pip install -U pip
     - pip install -r requirements.txt

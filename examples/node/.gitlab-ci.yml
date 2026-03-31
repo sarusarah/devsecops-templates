@@ -14,7 +14,7 @@
 # Required CI/CD secrets:
 #   - GITOPS_SSH_KEY          — SSH key for pushing to GitOps repo
 #   - DEVSECOPS_DTRACK_API_KEY          — (optional) Dependency-Track API key
-#   - AI_API_KEY              — (optional) Gemini or OpenAI API key
+#   - DEVSECOPS_AI_REPORT_API_KEY    — (optional) Gemini or OpenAI API key
 #   - DEVSECOPS_SLACK_WEBHOOK_URL       — (optional) Slack incoming webhook URL
 #
 # =============================================================================
@@ -40,10 +40,10 @@ include:
 # Variables — tune scanning, deployment, and optional integrations
 # ---------------------------------------------------------------------------
 variables:
-  APP_NAME: "nuxt-app"
-  LANGUAGE: "node"
-  NODE_VERSION: "20"
-  PACKAGE_MANAGER: "pnpm"          # npm|yarn|pnpm
+  DEVSECOPS_APP_NAME: "nuxt-app"
+  DEVSECOPS_PROJECT_LANGUAGE: "node"
+  DEVSECOPS_NODE_VERSION: "20"
+  DEVSECOPS_PACKAGE_MANAGER: "pnpm"          # npm|yarn|pnpm
 
   # --- Security scanner selection -----------------------------------------
   # Use specialized tools for comprehensive JavaScript/TypeScript analysis
@@ -77,8 +77,8 @@ variables:
 
   # --- AI-powered pipeline analysis (optional) ----------------------------
   DEVSECOPS_ENABLE_AI_REPORT: "false"        # Set to "true" and configure below to enable
-  # AI_PROVIDER: "gemini"          # or "openai" (default: "gemini")
-  # AI_API_KEY: set as CI/CD secret (Gemini or OpenAI API key)
+  # DEVSECOPS_AI_REPORT_PROVIDER: "gemini"          # or "openai" (default: "gemini")
+  # DEVSECOPS_AI_REPORT_API_KEY: set as CI/CD secret (Gemini or OpenAI API key)
   # DEVSECOPS_SLACK_WEBHOOK_URL: set as CI/CD secret (Slack incoming webhook)
 
 # ---------------------------------------------------------------------------
@@ -87,7 +87,7 @@ variables:
 
 build-application:
   stage: build
-  image: node:${NODE_VERSION}-alpine
+  image: node:${DEVSECOPS_NODE_VERSION}-alpine
   script:
     - corepack enable
     - pnpm install --frozen-lockfile
@@ -100,7 +100,7 @@ build-application:
 
 unit-tests:
   stage: test
-  image: node:${NODE_VERSION}-alpine
+  image: node:${DEVSECOPS_NODE_VERSION}-alpine
   script:
     - corepack enable
     - pnpm install --frozen-lockfile

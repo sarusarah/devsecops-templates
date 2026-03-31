@@ -4,11 +4,11 @@
 
 # Variables for local testing
 variables:
-  LANGUAGE: "node"
-  NODE_VERSION: "20"
-  PYTHON_VERSION: "3.12"
-  PHP_VERSION: "8.3"
-  PACKAGE_MANAGER: "npm"
+  DEVSECOPS_PROJECT_LANGUAGE: "node"
+  DEVSECOPS_NODE_VERSION: "20"
+  DEVSECOPS_PYTHON_VERSION: "3.12"
+  DEVSECOPS_PHP_VERSION: "8.3"
+  DEVSECOPS_PACKAGE_MANAGER: "npm"
 
   # Security scan toggles
   DEVSECOPS_ENABLE_SECRETS: "true"

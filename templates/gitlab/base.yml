@@ -12,7 +12,7 @@
 #       file: /templates/gitlab/base.yml
 #
 #   variables:
-#     LANGUAGE: "node"
+#     DEVSECOPS_PROJECT_LANGUAGE: "node"
 #     DEVSECOPS_ENABLE_SECRETS: "true"
 #     DEVSECOPS_ENABLE_DEPENDENCY_SCAN: "true"
 #
@@ -30,7 +30,7 @@
 #   ai-summary:   Consolidated AI summary + Slack notification
 #
 # Variables - Language & Security:
-#   LANGUAGE: "generic"                 # Language: "node", "python", "php", "generic" (default: "generic")
+#   DEVSECOPS_PROJECT_LANGUAGE: "generic"                 # Language: "node", "python", "php", "generic" (default: "generic")
 #   DEVSECOPS_SECURITY_SCANNER: "trivy"           # Scanner: "trivy" (unified) or "specialized" (default: "trivy")
 #   DEVSECOPS_SAST_TOOL: "semgrep"                # SAST tool: "semgrep" or "trivy" (default: "semgrep")
 #
@@ -109,7 +109,7 @@ default:
 
 variables:
   # Polyglot selector (node|python|php|java|generic)
-  LANGUAGE: "generic"
+  DEVSECOPS_PROJECT_LANGUAGE: "generic"
 
   # Security tool selection (trivy|specialized)
   # trivy: Use Trivy for all security scanning (secrets, dependencies, SAST, IaC, container)

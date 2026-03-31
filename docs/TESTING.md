@@ -269,7 +269,7 @@ dagger-validation:
     DOCKER_HOST: tcp://docker:2375
   script:
     - cd dagger
-    - dagger call test --source=.. --language=${LANGUAGE}
+    - dagger call test --source=.. --language=${DEVSECOPS_PROJECT_LANGUAGE}
   allow_failure: false
 ```
 

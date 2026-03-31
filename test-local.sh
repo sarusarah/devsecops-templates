@@ -31,7 +31,7 @@ test_example() {
     cd "examples/${example}"
 
     # Override variables for testing
-    export LANGUAGE="${language}"
+    export DEVSECOPS_PROJECT_LANGUAGE="${language}"
     export DEVSECOPS_ENABLE_DAST="false"  # Disable DAST for local testing
     export GITOPS_REPO=""       # Disable GitOps for local testing
 

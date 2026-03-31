@@ -11,32 +11,32 @@
 #     test-app:
 #       extends: .test:node
 #       variables:
-#         NODE_VERSION: "20"
-#         PACKAGE_MANAGER: "pnpm"
+#         DEVSECOPS_NODE_VERSION: "20"
+#         DEVSECOPS_PACKAGE_MANAGER: "pnpm"
 #
 #   Python:
 #     test-app:
 #       extends: .test:python
 #       variables:
-#         PYTHON_VERSION: "3.12"
+#         DEVSECOPS_PYTHON_VERSION: "3.12"
 #
 #   PHP:
 #     test-app:
 #       extends: .test:phpunit
 #       variables:
-#         PHP_VERSION: "8.3"
+#         DEVSECOPS_PHP_VERSION: "8.3"
 #
 # Variables - Node.js:
-#   NODE_VERSION: "20"                  # Node.js version (default: "20")
-#   PACKAGE_MANAGER: "npm"              # Package manager: "npm", "yarn", "pnpm" (default: "npm")
+#   DEVSECOPS_NODE_VERSION: "20"                  # Node.js version (default: "20")
+#   DEVSECOPS_PACKAGE_MANAGER: "npm"              # Package manager: "npm", "yarn", "pnpm" (default: "npm")
 #   DEVSECOPS_PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "frontend")
 #
 # Variables - Python:
-#   PYTHON_VERSION: "3.12"              # Python version (default: "3.12")
+#   DEVSECOPS_PYTHON_VERSION: "3.12"              # Python version (default: "3.12")
 #   DEVSECOPS_PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "backend")
 #
 # Variables - PHP:
-#   PHP_VERSION: "8.3"                  # PHP version (default: "8.3")
+#   DEVSECOPS_PHP_VERSION: "8.3"                  # PHP version (default: "8.3")
 #   DEVSECOPS_PROJECT_PATH: ""                    # Monorepo: subproject path (e.g., "api")
 #
 # Variables - Pipeline Control:
@@ -64,7 +64,7 @@
 #     extends: .test:node
 #     variables:
 #       DEVSECOPS_PROJECT_PATH: "frontend"
-#       PACKAGE_MANAGER: "pnpm"
+#       DEVSECOPS_PACKAGE_MANAGER: "pnpm"
 #
 # Custom Test Commands:
 #   Override script for custom test execution:
@@ -91,16 +91,16 @@
 
 .test:node:
   extends: .test:base
-  image: node:${NODE_VERSION:-20}-alpine
+  image: node:${DEVSECOPS_NODE_VERSION:-20}-alpine
   before_script:
     - cd "${DEVSECOPS_PROJECT_PATH:-.}"
   script:
     - corepack enable
     - |
-      if [ "${PACKAGE_MANAGER:-npm}" = "pnpm" ]; then
+      if [ "${DEVSECOPS_PACKAGE_MANAGER:-npm}" = "pnpm" ]; then
         pnpm install --frozen-lockfile
         pnpm test -- --ci
-      elif [ "${PACKAGE_MANAGER:-npm}" = "yarn" ]; then
+      elif [ "${DEVSECOPS_PACKAGE_MANAGER:-npm}" = "yarn" ]; then
         yarn install --frozen-lockfile
         yarn test
       else
@@ -110,7 +110,7 @@
 
 .test:python:
   extends: .test:base
-  image: python:${PYTHON_VERSION:-3.12}-slim
+  image: python:${DEVSECOPS_PYTHON_VERSION:-3.12}-slim
   before_script:
     - cd "${DEVSECOPS_PROJECT_PATH:-.}"
   script:
@@ -131,7 +131,7 @@
 
 .test:phpunit:
   extends: .test:base
-  image: php:${PHP_VERSION:-8.3}-cli
+  image: php:${DEVSECOPS_PHP_VERSION:-8.3}-cli
   before_script:
     - cd "${DEVSECOPS_PROJECT_PATH:-.}"
     - php -v

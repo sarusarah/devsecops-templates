@@ -75,7 +75,7 @@ include:
       - /templates/gitlab/ai-report.yml          # Gemini/OpenAI analysis → Slack summary
 
 variables:
-  LANGUAGE: "node"  # node | python | php | generic
+  DEVSECOPS_PROJECT_LANGUAGE: "node"  # node | python | php | generic
 
   # Security
   DEVSECOPS_SECURITY_SCANNER: "trivy"          # trivy | specialized
@@ -94,7 +94,7 @@ variables:
 
   # AI reporting
   DEVSECOPS_ENABLE_AI_REPORT: "true"
-  # AI_API_KEY and DEVSECOPS_SLACK_WEBHOOK_URL → set as CI/CD secrets
+  # DEVSECOPS_AI_REPORT_API_KEY and DEVSECOPS_SLACK_WEBHOOK_URL → set as CI/CD secrets
 
 # Your custom jobs here…
 ```
@@ -201,12 +201,25 @@ variables:
 # Install Dagger
 curl -L https://dl.dagger.io/dagger/install.sh | sh
 
-# Run all security scans
-dagger call test --source=. --language=node
+# Run all security scans (node, python, php)
+make test
 
-# Run individual scans
-dagger call secrets-detection --source=.
-dagger call sast-scanning --source=.
+# Run a single language
+make test-node
+make test-python
+make test-php
+
+# Validate GitHub Actions YAML
+make validate
+
+# Test AI reporting pipeline
+make ai-report-test
+
+# Or call dagger directly
+cd dagger
+dagger call test --source=../examples/node --language=node
+dagger call secrets-detection --source=../examples/node
+dagger call sast-scanning --source=../examples/node
 ```
 
 ### Option 2: gitlab-ci-local
@@ -349,7 +362,7 @@ include:
 build-app:
   extends: .build:node
   variables:
-    NODE_VERSION: "20"
+    DEVSECOPS_NODE_VERSION: "20"
 ```
 
 ---
@@ -375,7 +388,7 @@ build:frontend:
   extends: .build:node
   variables:
     DEVSECOPS_PROJECT_PATH: frontend
-    NODE_VERSION: "20"
+    DEVSECOPS_NODE_VERSION: "20"
   rules:
     - changes:
         - frontend/**/*
@@ -393,7 +406,7 @@ build:backend:
   extends: .build:python
   variables:
     DEVSECOPS_PROJECT_PATH: backend
-    PYTHON_VERSION: "3.12"
+    DEVSECOPS_PYTHON_VERSION: "3.12"
   rules:
     - changes:
         - backend/**/*
@@ -478,11 +491,11 @@ Each example includes:
 
 ### Language Selection
 ```yaml
-LANGUAGE: "node"  # node|python|php|generic
-NODE_VERSION: "20"
-PYTHON_VERSION: "3.12"
-PHP_VERSION: "8.3"
-PACKAGE_MANAGER: "npm"  # npm|yarn|pnpm
+DEVSECOPS_PROJECT_LANGUAGE: "node"  # node|python|php|generic
+DEVSECOPS_NODE_VERSION: "20"
+DEVSECOPS_PYTHON_VERSION: "3.12"
+DEVSECOPS_PHP_VERSION: "8.3"
+DEVSECOPS_PACKAGE_MANAGER: "npm"  # npm|yarn|pnpm
 ```
 
 ### Security Scanning
@@ -686,8 +699,8 @@ include:
 
 variables:
   DEVSECOPS_ENABLE_AI_REPORT: "true"
-  # AI_PROVIDER: "openai"  # Optional: switch to OpenAI (default: "gemini")
-  # Set AI_API_KEY as CI/CD secret (Gemini or OpenAI key)
+  # DEVSECOPS_AI_REPORT_PROVIDER: "openai"  # Optional: switch to OpenAI (default: "gemini")
+  # Set DEVSECOPS_AI_REPORT_API_KEY as CI/CD secret (Gemini or OpenAI key)
   # Set DEVSECOPS_SLACK_WEBHOOK_URL as CI/CD secret (optional)
 ```
 
@@ -700,7 +713,7 @@ jobs:
     if: always()
     uses: ./.github/workflows/ai-report.yml
     secrets:
-      ai_api_key: ${{ secrets.AI_API_KEY }}
+      ai_api_key: ${{ secrets.DEVSECOPS_AI_REPORT_API_KEY }}
       slack_webhook_url: ${{ secrets.DEVSECOPS_SLACK_WEBHOOK_URL }}
 ```
 
@@ -709,10 +722,10 @@ jobs:
 | Variable / Secret | Description |
 |-------------------|-------------|
 | `DEVSECOPS_ENABLE_AI_REPORT` | Feature toggle (default: `"false"`) |
-| `AI_API_KEY` | API key for Gemini or OpenAI (CI/CD secret) |
-| `AI_PROVIDER` | `"gemini"` (default) or `"openai"` |
+| `DEVSECOPS_AI_REPORT_API_KEY` | API key for Gemini or OpenAI (CI/CD secret) |
+| `DEVSECOPS_AI_REPORT_PROVIDER` | `"gemini"` (default) or `"openai"` |
 | `DEVSECOPS_SLACK_WEBHOOK_URL` | Slack incoming webhook URL (CI/CD secret, optional) |
-| `AI_MODEL` | Model override (default: auto per provider) |
+| `DEVSECOPS_AI_REPORT_MODEL` | Model override (default: auto per provider) |
 
 ### Notifications
 ```yaml
@@ -801,13 +814,13 @@ include:
   - local: devsecops.yml
 
 variables:
-  LANGUAGE: "node"           # node | python | php | generic
-  NODE_VERSION: "20"
-  PACKAGE_MANAGER: "pnpm"   # npm | yarn | pnpm
+  DEVSECOPS_PROJECT_LANGUAGE: "node"           # node | python | php | generic
+  DEVSECOPS_NODE_VERSION: "20"
+  DEVSECOPS_PACKAGE_MANAGER: "pnpm"   # npm | yarn | pnpm
 
 build-application:
   stage: build
-  image: node:${NODE_VERSION}-alpine
+  image: node:${DEVSECOPS_NODE_VERSION}-alpine
   script:
     - corepack enable
     - pnpm install --frozen-lockfile
@@ -818,7 +831,7 @@ build-application:
 
 unit-tests:
   stage: test
-  image: node:${NODE_VERSION}-alpine
+  image: node:${DEVSECOPS_NODE_VERSION}-alpine
   script:
     - corepack enable
     - pnpm install --frozen-lockfile
@@ -832,7 +845,7 @@ In **Settings > CI/CD > Variables**, add any secrets required by the templates y
 | Variable | When Needed |
 |----------|-------------|
 | `DEVSECOPS_DTRACK_API_KEY` | Dependency-Track integration |
-| `AI_API_KEY` | AI pipeline analysis (Gemini or OpenAI key) |
+| `DEVSECOPS_AI_REPORT_API_KEY` | AI pipeline analysis (Gemini or OpenAI key) |
 | `DEVSECOPS_SLACK_WEBHOOK_URL` | Slack notifications for AI reports |
 | `GITOPS_SSH_KEY` | GitOps deployments |
 

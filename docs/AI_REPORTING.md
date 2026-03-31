@@ -26,13 +26,13 @@ Choose your preferred AI provider:
 **Google Gemini (default):**
 1. Go to [Google AI Studio](https://aistudio.google.com/apikey)
 2. Create a new API key
-3. Add it as a CI/CD secret named `AI_API_KEY`
+3. Add it as a CI/CD secret named `DEVSECOPS_AI_REPORT_API_KEY`
 
 **OpenAI:**
 1. Go to [OpenAI Platform](https://platform.openai.com/api-keys)
 2. Create a new API key
-3. Add it as a CI/CD secret named `AI_API_KEY`
-4. Set the `AI_PROVIDER` variable to `"openai"`
+3. Add it as a CI/CD secret named `DEVSECOPS_AI_REPORT_API_KEY`
+4. Set the `DEVSECOPS_AI_REPORT_PROVIDER` variable to `"openai"`
 
 ### 2. Set Up Slack Webhook (Optional)
 
@@ -55,7 +55,7 @@ include:
 
 variables:
   DEVSECOPS_ENABLE_AI_REPORT: "true"
-  # AI_PROVIDER: "openai"       # Optional: defaults to "gemini"
+  # DEVSECOPS_AI_REPORT_PROVIDER: "openai"       # Optional: defaults to "gemini"
 ```
 
 **GitHub Actions:**
@@ -70,7 +70,7 @@ jobs:
     if: always()
     uses: ./.github/workflows/ai-report.yml  # or your template path
     secrets:
-      ai_api_key: ${{ secrets.AI_API_KEY }}
+      ai_api_key: ${{ secrets.DEVSECOPS_AI_REPORT_API_KEY }}
       slack_webhook_url: ${{ secrets.DEVSECOPS_SLACK_WEBHOOK_URL }}
     # with:
     #   ai_provider: "openai"   # Optional: defaults to "gemini"
@@ -125,7 +125,7 @@ Deployment stages are **not** analyzed:
 
 | Secret | Required | Description |
 |--------|----------|-------------|
-| `AI_API_KEY` | Yes | API key for the configured AI provider (Google AI Studio or OpenAI) |
+| `DEVSECOPS_AI_REPORT_API_KEY` | Yes | API key for the configured AI provider (Google AI Studio or OpenAI) |
 | `DEVSECOPS_SLACK_WEBHOOK_URL` | No | Slack incoming webhook URL. If not set, reports are saved as artifacts only |
 
 ### Variables
@@ -133,9 +133,9 @@ Deployment stages are **not** analyzed:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `DEVSECOPS_ENABLE_AI_REPORT` | `"false"` | Feature toggle — set to `"true"` to enable |
-| `AI_PROVIDER` | `"gemini"` | AI provider to use: `"gemini"` or `"openai"` |
-| `AI_MODEL` | Auto per provider | Model override. Defaults: `gemini-2.0-flash` (Gemini), `gpt-4.1-mini` (OpenAI) |
-| `AI_API_URL` | Auto per provider | API endpoint override. Defaults are set automatically per provider |
+| `DEVSECOPS_AI_REPORT_PROVIDER` | `"gemini"` | AI provider to use: `"gemini"` or `"openai"` |
+| `DEVSECOPS_AI_REPORT_MODEL` | Auto per provider | Model override. Defaults: `gemini-2.0-flash` (Gemini), `gpt-4.1-mini` (OpenAI) |
+| `DEVSECOPS_AI_REPORT_API_URL` | Auto per provider | API endpoint override. Defaults are set automatically per provider |
 
 ---
 
@@ -157,16 +157,16 @@ include:
       - /templates/gitlab/ai-report.yml          # Add this
 
 variables:
-  LANGUAGE: "node"
+  DEVSECOPS_PROJECT_LANGUAGE: "node"
   DEVSECOPS_ENABLE_SECRETS: "true"
   DEVSECOPS_ENABLE_DEPENDENCY_SCAN: "true"
   DEVSECOPS_ENABLE_SAST: "true"
   DEVSECOPS_ENABLE_AI_REPORT: "true"                       # Enable AI reporting
-  # AI_PROVIDER: "openai"                        # Optional: defaults to "gemini"
-  # AI_MODEL: "gpt-4.1"                          # Optional: override the model
+  # DEVSECOPS_AI_REPORT_PROVIDER: "openai"                        # Optional: defaults to "gemini"
+  # DEVSECOPS_AI_REPORT_MODEL: "gpt-4.1"                          # Optional: override the model
 ```
 
-Then add `AI_API_KEY` and optionally `DEVSECOPS_SLACK_WEBHOOK_URL` as CI/CD secrets in GitLab Settings > CI/CD > Variables.
+Then add `DEVSECOPS_AI_REPORT_API_KEY` and optionally `DEVSECOPS_SLACK_WEBHOOK_URL` as CI/CD secrets in GitLab Settings > CI/CD > Variables.
 
 ### Monorepo Setup
 
@@ -230,7 +230,7 @@ jobs:
     if: always()                                   # Run even if jobs fail
     uses: ./.github/workflows/ai-report.yml        # Or your template path
     secrets:
-      ai_api_key: ${{ secrets.AI_API_KEY }}
+      ai_api_key: ${{ secrets.DEVSECOPS_AI_REPORT_API_KEY }}
       slack_webhook_url: ${{ secrets.DEVSECOPS_SLACK_WEBHOOK_URL }}
     # with:
     #   ai_provider: "openai"
@@ -289,10 +289,10 @@ Branch: main | Commit: abc1234
 | Variable | Default | Scope | Description |
 |----------|---------|-------|-------------|
 | `DEVSECOPS_ENABLE_AI_REPORT` | `"false"` | `base.yml` | Enable AI reporting |
-| `AI_PROVIDER` | `"gemini"` | `ai-report.yml` | AI provider: `"gemini"` or `"openai"` |
-| `AI_MODEL` | Auto per provider | `ai-report.yml` | Model override (defaults: `gemini-2.0-flash` / `gpt-4.1-mini`) |
-| `AI_API_URL` | Auto per provider | `ai-report.yml` | API endpoint override |
-| `AI_API_KEY` | — | CI/CD secret | API key for the configured AI provider |
+| `DEVSECOPS_AI_REPORT_PROVIDER` | `"gemini"` | `ai-report.yml` | AI provider: `"gemini"` or `"openai"` |
+| `DEVSECOPS_AI_REPORT_MODEL` | Auto per provider | `ai-report.yml` | Model override (defaults: `gemini-2.0-flash` / `gpt-4.1-mini`) |
+| `DEVSECOPS_AI_REPORT_API_URL` | Auto per provider | `ai-report.yml` | API endpoint override |
+| `DEVSECOPS_AI_REPORT_API_KEY` | — | CI/CD secret | API key for the configured AI provider |
 | `DEVSECOPS_SLACK_WEBHOOK_URL` | — | CI/CD secret | Slack webhook URL |
 
 ### GitHub Actions
@@ -308,7 +308,7 @@ Branch: main | Commit: abc1234
 
 ## Vertex AI Upgrade Path
 
-> **Note:** Vertex AI is specific to Google Gemini. This upgrade path applies only when using `AI_PROVIDER: "gemini"` (the default).
+> **Note:** Vertex AI is specific to Google Gemini. This upgrade path applies only when using `DEVSECOPS_AI_REPORT_PROVIDER: "gemini"` (the default).
 
 The default Gemini configuration uses Google AI Studio with a simple API key. For organizations requiring Swiss data residency (data stays in Zurich), you can upgrade to Vertex AI:
 
@@ -328,17 +328,17 @@ The Gemini model and prompts remain identical — only the API endpoint and auth
 | **Data residency** | No guarantee | Zurich (europe-west6) |
 | **Cost** | Same | Same |
 
-To switch, override `AI_API_URL` and adjust authentication in the template.
+To switch, override `DEVSECOPS_AI_REPORT_API_URL` and adjust authentication in the template.
 
 ---
 
 ## Troubleshooting
 
-### AI analysis skipped — "AI_API_KEY not set"
+### AI analysis skipped — "DEVSECOPS_AI_REPORT_API_KEY not set"
 
 The API key is not configured as a CI/CD secret.
 
-**Fix:** Add `AI_API_KEY` in GitLab Settings > CI/CD > Variables (or GitHub repo Settings > Secrets).
+**Fix:** Add `DEVSECOPS_AI_REPORT_API_KEY` in GitLab Settings > CI/CD > Variables (or GitHub repo Settings > Secrets).
 
 ### Gemini API returns 403
 
