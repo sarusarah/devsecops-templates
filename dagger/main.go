@@ -151,7 +151,7 @@ func (m *Devsecops) ContainerScanning(
 	imageRef := fmt.Sprintf("%s:%s", imageName, imageTag)
 
 	return dag.Container().
-		From("aquasec/trivy:0.58.1").
+		From("aquasec/trivy:0.70.0").
 		WithExec([]string{
 			"trivy", "image",
 			"--severity", "CRITICAL,HIGH",
@@ -394,7 +394,7 @@ echo "  dagger call dtrack-upload --source=. --dtrack-url=<URL> --dtrack-api-key
 `
 
 	container := dag.Container().
-		From("aquasec/trivy:0.58.1").
+		From("aquasec/trivy:0.70.0").
 		WithMountedDirectory("/src", source).
 		WithWorkdir("/src").
 		WithExec([]string{"apk", "add", "--no-cache", "curl", "jq", "coreutils"}).
@@ -480,7 +480,7 @@ fi
 `
 
 	container := dag.Container().
-		From("aquasec/trivy:0.58.1").
+		From("aquasec/trivy:0.70.0").
 		WithMountedDirectory("/src", source).
 		WithWorkdir("/src").
 		WithExec([]string{"apk", "add", "--no-cache", "curl", "jq", "coreutils"}).
@@ -944,7 +944,7 @@ echo "All AI Reporting tests passed!"
 `
 
 	container := dag.Container().
-		From("aquasec/trivy:0.58.1").
+		From("aquasec/trivy:0.70.0").
 		WithMountedDirectory("/src", source).
 		WithWorkdir("/src").
 		WithExec([]string{"apk", "add", "--no-cache", "curl", "jq", "coreutils", "grep"})
