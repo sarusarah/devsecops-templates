@@ -65,7 +65,7 @@ security:secrets-gitleaks:
 
 security:comprehensive-trivy:
   stage: validate
-  image: aquasec/trivy:0.58.1
+  image: aquasec/trivy:0.70.0
   script:
     - trivy fs --scanners vuln,secret,misconfig --severity HIGH,CRITICAL .
   rules:

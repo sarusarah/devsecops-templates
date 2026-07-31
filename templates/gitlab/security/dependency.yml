@@ -53,7 +53,7 @@
 dependency-scanning:
   stage: source
   image:
-    name: aquasec/trivy:0.58.1
+    name: aquasec/trivy:0.70.0
     entrypoint: [""]
   before_script: []
   cache: {}
