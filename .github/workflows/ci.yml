@@ -164,7 +164,7 @@ jobs:
             --exclude='.git*' --exclude='*.pyc' \
             templates/ examples/ dagger/ *.md
           sha256sum devsecops-templates-${{ github.ref_name }}.tar.gz > checksums.txt
-      - uses: softprops/action-gh-release@v1
+      - uses: softprops/action-gh-release@v3
         with:
           files: |
             devsecops-templates-${{ github.ref_name }}.tar.gz
